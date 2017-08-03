@@ -93,6 +93,16 @@ int read_id(char* dst)
 		p = p + 1;
 	}
 	*dst = 0;
+
+	/* Types are ignored */
+	if (strcomp (id, "int") || strcomp (id, "char"))
+	{
+		/* Bypass pointer asterisk too */
+		read_sym ('*');
+		/* Read the actual identifier */
+		read_id (dst);
+	}
+
 	return 1;
 }
 
@@ -184,12 +194,6 @@ int parse_root()
 	 * statement within the program's root. */
 	while (read_id (id))
 	{
-		/* Types are ignored */
-		if (strcomp (id, "int") || strcomp (id, "char"))
-		{
-			continue;
-		}
-
 		/* A function declaration */
 		if (read_sym ('('))
 		{
