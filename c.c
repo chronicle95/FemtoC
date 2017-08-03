@@ -2,7 +2,7 @@
 
 /* Utility functions */
 
-int strcmp(char *a, char *b)
+int strcomp(char *a, char *b)
 {
 	if (a == 0 && b == 0)
 	{
