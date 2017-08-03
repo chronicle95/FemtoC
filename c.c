@@ -155,6 +155,13 @@ int read_csym(char *p, int *i, char *dst)
 /* Parse and process
  * functions */
 
+int parse_expr(char *p, int *i)
+{
+	/* Any closing brackets, commas and semicolons
+	 * are considered the end of expression */
+	
+}
+
 int parse_func(char *p, int *i, char *name)
 {
 }
