@@ -1,11 +1,11 @@
 #include <stdio.h>
 
 /* Global variables */
-char *p = 0; /* source code pointer */
+char* p = 0; /* source code pointer */
 
 /* Utility functions */
 
-int strcomp(char *a, char *b)
+int strcomp(char* a, char* b)
 {
 	if (a == 0 && b == 0)
 	{
@@ -79,7 +79,7 @@ int read_sym(char exp)
 	return 0;
 }
 
-int read_id(char *dst)
+int read_id(char* dst)
 {
 	read_space ();
 	if (!is_id0 (*p))
@@ -96,7 +96,7 @@ int read_id(char *dst)
 	return 1;
 }
 
-int read_number(char *dst)
+int read_number(char* dst)
 {
 	read_space ();
 	if (!is_digit (*p))
@@ -113,7 +113,7 @@ int read_number(char *dst)
 	return 1;
 }
 
-int read_cstr(char *dst)
+int read_cstr(char* dst)
 {
 	if (!read_sym ('\"'))
 	{
@@ -134,7 +134,7 @@ int read_cstr(char *dst)
 	return 1;
 }
 
-int read_csym(char *dst)
+int read_csym(char* dst)
 {
 	if (!read_sym ('\''))
 	{
@@ -165,15 +165,15 @@ int parse_expr()
 
 }
 
-int parse_func(char *name)
+int parse_func(char* name)
 {
 }
 
-int parse_gvar(char *name)
+int parse_gvar(char* name)
 {
 }
 
-int parse_garr(char *name)
+int parse_garr(char* name)
 {
 }
 
