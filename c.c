@@ -202,12 +202,22 @@ int parse_expr()
 		{
 			write_str ("    push ");
 			write_str (buf);
-			write_chr (10);
+		}
+		else if (read_id (buf))
+		{
+			write_str ("    pushl ");
+			write_str (buf);
+		}
+		else if (read_sym ('+'))
+		{
+			// TODO: infix operator second argument 
+			write_str ("    add");
 		}
 		else
 		{
 			return 0;
 		}
+		write_chr (10);
 	}
 	return 1;
 }
