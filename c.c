@@ -4,7 +4,7 @@
  * 
  * push <n>  - put constant on stack
  * pushl <l> - put label address on stack
- * pushi     - take stack head as address
+ * pushi     - pop stack head as address
  *             and push value at this address
  * neg       - logically invert stack head
  * inv       - bitwise inversion of stack head
@@ -245,6 +245,8 @@ int parse_operand()
 	{
 		write_str ("    pushl ");
 		write_str (buf);
+		write_chr (10);
+		write_str ("    pushi");
 		return 1;
 	}
 	return 0;
@@ -269,6 +271,8 @@ int parse_expr()
 		{
 			write_str ("    pushl ");
 			write_str (buf);
+			write_chr (10);
+			write_str ("    pushi");
 		}
 		else if (read_sym ('+'))
 		{
