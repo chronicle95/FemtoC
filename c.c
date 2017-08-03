@@ -190,12 +190,13 @@ int read_csym(char* dst)
 
 int parse_expr()
 {
+	char buf[16];
 	/* Any closing brackets, commas and semicolons
 	 * are considered the end of expression */
 	while (!read_sym (',')
-			|| !read_sym (';')
-			|| !read_sym (')')
-			|| !read_sym (']'))
+			&& !read_sym (';')
+			&& !read_sym (')')
+			&& !read_sym (']'))
 	{
 	}
 }
