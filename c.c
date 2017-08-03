@@ -184,6 +184,12 @@ int parse_root()
 	 * statement within the program's root. */
 	while (read_id (id))
 	{
+		/* Types are ignored */
+		if (strcomp (id, "int") || strcomp (id, "char"))
+		{
+			continue;
+		}
+
 		/* A function declaration */
 		if (read_sym ('('))
 		{
