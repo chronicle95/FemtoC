@@ -33,7 +33,7 @@ int strcomp(char *a, char *b)
 int is_space(char c)
 {
 	return (c == ' ' || c == 10
-			c == 13  || c == 8);
+			|| c == 13  || c == 8);
 }
 
 int is_digit(char c)
@@ -159,7 +159,7 @@ int parse_expr(char *p, int *i)
 {
 	/* Any closing brackets, commas and semicolons
 	 * are considered the end of expression */
-	
+
 }
 
 int parse_func(char *p, int *i, char *name)
