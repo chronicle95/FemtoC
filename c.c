@@ -39,7 +39,7 @@ int write_chr (char c)
 	return 1;
 }
 
-int write_line (char *s)
+int write_str (char *s)
 {
 	while (*s)
 	{
@@ -198,7 +198,18 @@ int parse_expr()
 			&& !read_sym (')')
 			&& !read_sym (']'))
 	{
+		if (read_number (buf))
+		{
+			write_str ("    push ");
+			write_str (buf);
+			write_chr (10);
+		}
+		else
+		{
+			return 0;
+		}
 	}
+	return 1;
 }
 
 int parse_func(char* name)
