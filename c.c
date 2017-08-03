@@ -102,7 +102,7 @@ int read_id(char* dst)
 		/* Bypass pointer asterisk too */
 		read_sym ('*');
 		/* Read the actual identifier */
-		read_id (dst);
+		return read_id (dst);
 	}
 
 	return 1;
