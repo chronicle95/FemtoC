@@ -127,19 +127,53 @@ int read_csym(char *p, int *i, char *dst)
 /* Parse and process
  * functions */
 
+int parse_func(char *p, int *i, char *name)
+{
+}
+
+int parse_gvar(char *p, int *i, char *name)
+{
+}
+
+int parse_garr(char *p, int *i, char *name)
+{
+}
+
 int parse_root(char *p, int *i)
 {
 	char id[16];
 	/* Read identifier as a basis for any
-	 * statement within the program's root.
-	 * It is supposed to be a function declaration */
+	 * statement within the program's root. */
 	while (read_id (p, i, id))
 	{
-		if (!read_sym (p, i, '('))
+		/* A function declaration */
+		if (read_sym (p, i, '('))
+		{
+			if (!parse_func (p, i, id))
+			{
+				break;
+			}
+		}
+		/* Global variable declaration and initialization */
+		else if (read_sym (p, i, '='))
+		{
+			if (!parse_gvar (p, i, id))
+			{
+				break;
+			}
+		}
+		/* Global array declaration */
+		else if (read_sym (p, i, '['))
+		{
+			if (!parse_garr (p, i, id))
+			{
+				break;
+			}
+		}
+		else
 		{
 			break;
 		}
-		// TODO
 	}
 	/* At this moment we always return 1
 	 * with no error checks */
@@ -150,5 +184,5 @@ int parse_root(char *p, int *i)
 
 int main()
 {
-	return 0;
+	return 0; /* SUCCESS */
 }
