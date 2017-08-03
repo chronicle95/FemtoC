@@ -1,5 +1,33 @@
 #include <stdio.h>
 
+/* Utility functions */
+
+int strcmp(char *a, char *b)
+{
+	if (a == 0 && b == 0)
+	{
+		return 1;
+	}
+	if (a == 0 || b == 0)
+	{
+		return 0;
+	}
+	while (*a && *b)
+	{
+		if (*a != *b) 
+		{
+			return 0;
+		}
+		a = a + 1;
+		b = b + 1;
+	}
+	if (*a || *b)
+	{
+		return 0;
+	}
+	return 1;
+}
+
 /* Character test functions */
 
 int is_space(char c)
