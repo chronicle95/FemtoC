@@ -1,5 +1,18 @@
 #include <stdio.h>
 
+/* Assembly language brief
+ * 
+ * push <n>  - put constant on stack
+ * pushl <l> - put label address on stack
+ * pushi     - take stack head as address
+ *             and push value at this address
+ * neg       - logically invert stack head
+ * inv       - bitwise inversion of stack head
+ * add       - pop two topmost stack values
+ *             and push their sum
+ */
+
+
 /* Global variables */
 char* p = 0; /* source code pointer */
 char* r = 0; /* output pointer */
@@ -187,6 +200,55 @@ int read_csym(char* dst)
 
 /* Parse and process
  * functions */
+
+int parse_operand()
+{
+	char buf[16];
+	if (read_sym ('!'))
+	{
+		if (parse_operand())
+		{
+			write_chr (10);
+			write_str ("    neg");
+			return 1;
+		}
+	}
+	else if (read_sym ('~'))
+	{
+		if (parse_operand())
+		{
+			write_chr (10);
+			write_str ("    inv");
+			return 1;
+		}
+	}
+	else if (read_sym ('*'))
+	{
+		if (parse_operand())
+		{
+			write_chr (10);
+			write_str ("    pushi");
+			return 1;
+		}
+	}
+	else if (read_sym ('('))
+	{
+		return parse_expr();
+	}
+	else if (read_number (buf))
+	{
+		write_str ("    push ");
+		write_str (buf);
+		return 1;
+	}
+	else if (read_id (buf))
+	{
+		write_str ("    pushl ");
+		write_str (buf);
+		return 1;
+	}
+	return 0;
+}
 
 int parse_expr()
 {
