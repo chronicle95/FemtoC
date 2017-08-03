@@ -2,6 +2,7 @@
 
 /* Global variables */
 char* p = 0; /* source code pointer */
+char* r = 0; /* output pointer */
 
 /* Utility functions */
 
@@ -27,6 +28,23 @@ int strcomp(char* a, char* b)
 	if (*a || *b)
 	{
 		return 0;
+	}
+	return 1;
+}
+
+int write_chr (char c)
+{
+	*r = c;
+	r++;
+	return 1;
+}
+
+int write_line (char *s)
+{
+	while (*s)
+	{
+		write_chr (*s);
+		s++;
 	}
 	return 1;
 }
@@ -174,7 +192,12 @@ int parse_expr()
 {
 	/* Any closing brackets, commas and semicolons
 	 * are considered the end of expression */
-
+	while (!read_sym (',')
+			|| !read_sym (';')
+			|| !read_sym (')')
+			|| !read_sym (']'))
+	{
+	}
 }
 
 int parse_func(char* name)
