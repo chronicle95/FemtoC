@@ -10,6 +10,7 @@
  * inv       - bitwise inversion of stack head
  * add       - pop two topmost stack values
  *             and push their sum
+ * sub       - same as addition, but subtraction
  */
 
 
@@ -276,8 +277,15 @@ int parse_expr()
 		}
 		else if (read_sym ('+'))
 		{
-			// TODO: infix operator second argument 
+			parse_operand ();
+			write_chr (10);
 			write_str ("    add");
+		}
+		else if (read_sym ('-'))
+		{
+			parse_operand ();
+			write_chr (10);
+			write_str ("    sub");
 		}
 		else
 		{
