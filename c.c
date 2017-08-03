@@ -95,7 +95,7 @@ int read_id(char* dst)
 	*dst = 0;
 
 	/* Types are ignored */
-	if (strcomp (id, "int") || strcomp (id, "char"))
+	if (strcomp (dst, "int") || strcomp (dst, "char"))
 	{
 		/* Bypass pointer asterisk too */
 		read_sym ('*');
