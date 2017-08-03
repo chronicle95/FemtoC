@@ -1,5 +1,8 @@
 #include <stdio.h>
 
+/* Global variables */
+char *p = 0; /* source code pointer */
+
 /* Utility functions */
 
 int strcomp(char *a, char *b)
@@ -56,97 +59,97 @@ int is_id(char c)
 
 /* Read functions */
 
-int read_space(char *p, int *i)
+int read_space()
 {
-	while (is_space (*(p+*i)))
+	while (is_space (*p))
 	{
-		*i = *i + 1;
+		p = p + 1;
 	}
 	return 1;
 }
 
-int read_sym(char *p, int *i, char exp)
+int read_sym(char exp)
 {
-	read_space (p, i);
-	if (*(p+*i) == exp)
+	read_space ();
+	if (*p == exp)
 	{
-		*i = *i + 1;
+		p = p + 1;
 		return 1;
 	}
 	return 0;
 }
 
-int read_id(char *p, int *i, char *dst)
+int read_id(char *dst)
 {
-	read_space (p, i);
-	if (!is_id0 (*(p+*i)))
+	read_space ();
+	if (!is_id0 (*p))
 	{
 		return 0;
 	}
-	while (is_id (*(p+*i)))
+	while (is_id (*p))
 	{
-		*dst = *(p+*i);
+		*dst = *p;
 		dst = dst + 1;
-		*i = *i + 1;
+		p = p + 1;
 	}
 	*dst = 0;
 	return 1;
 }
 
-int read_number(char *p, int *i, char *dst)
+int read_number(char *dst)
 {
-	read_space (p, i);
-	if (!is_digit (*(p+*i)))
+	read_space ();
+	if (!is_digit (*p))
 	{
 		return 0;
 	}
-	while (is_digit (*(p+*i)))
+	while (is_digit (*p))
 	{
-		*dst = *(p+*i);
+		*dst = *p;
 		dst = dst + 1;
-		*i = *i + 1;
+		p = p + 1;
 	}
 	*dst = 0;
 	return 1;
 }
 
-int read_cstr(char *p, int *i, char *dst)
+int read_cstr(char *dst)
 {
-	if (!read_sym (p, i, '\"'))
+	if (!read_sym ('\"'))
 	{
 		return 0;
 	}
-	*i = *i + 1;
-	while (*(p+*i) != '\"')
+	p = p + 1;
+	while (*p != '\"')
 	{
-		if (*(p+*i) == '\\')
+		if (*p == '\\')
 		{
-			*i = *i + 1;
+			p = p + 1;
 		}
-		*dst = *(p+*i);
+		*dst = *p;
 		dst = dst + 1;
-		*i = *i + 1;
+		p = p + 1;
 	}
 	*dst = 0;
 	return 1;
 }
 
-int read_csym(char *p, int *i, char *dst)
+int read_csym(char *dst)
 {
-	if (!read_sym (p, i, '\''))
+	if (!read_sym ('\''))
 	{
 		return 0;
 	}
-	*i = *i + 1;
-	while (*(p+*i) != '\'')
+	p = p + 1;
+	while (*p != '\'')
 	{
-		if (*(p+*i) == '\\')
+		if (*p == '\\')
 		{
-			*i = *i + 1;
+			p = p + 1;
 		}
-		*dst = *(p+*i);
+		*dst = *p;
 		dst = dst + 1;
-		*i = *i + 1;
+		p = p + 1;
 	}
 	*dst = 0;
 	return 1;
@@ -155,52 +158,52 @@ int read_csym(char *p, int *i, char *dst)
 /* Parse and process
  * functions */
 
-int parse_expr(char *p, int *i)
+int parse_expr()
 {
 	/* Any closing brackets, commas and semicolons
 	 * are considered the end of expression */
 
 }
 
-int parse_func(char *p, int *i, char *name)
+int parse_func(char *name)
 {
 }
 
-int parse_gvar(char *p, int *i, char *name)
+int parse_gvar(char *name)
 {
 }
 
-int parse_garr(char *p, int *i, char *name)
+int parse_garr(char *name)
 {
 }
 
-int parse_root(char *p, int *i)
+int parse_root()
 {
 	char id[16];
 	/* Read identifier as a basis for any
 	 * statement within the program's root. */
-	while (read_id (p, i, id))
+	while (read_id (id))
 	{
 		/* A function declaration */
-		if (read_sym (p, i, '('))
+		if (read_sym ('('))
 		{
-			if (!parse_func (p, i, id))
+			if (!parse_func (id))
 			{
 				break;
 			}
 		}
 		/* Global variable declaration and initialization */
-		else if (read_sym (p, i, '='))
+		else if (read_sym ('='))
 		{
-			if (!parse_gvar (p, i, id))
+			if (!parse_gvar (id))
 			{
 				break;
 			}
 		}
 		/* Global array declaration */
-		else if (read_sym (p, i, '['))
+		else if (read_sym ('['))
 		{
-			if (!parse_garr (p, i, id))
+			if (!parse_garr (id))
 			{
 				break;
 			}
