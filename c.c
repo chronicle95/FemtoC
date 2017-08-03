@@ -81,6 +81,8 @@ int read_sym(char exp)
 
 int read_id(char* dst)
 {
+	char* dp = dst;
+
 	read_space ();
 	if (!is_id0 (*p))
 	{
@@ -88,14 +90,14 @@ int read_id(char* dst)
 	}
 	while (is_id (*p))
 	{
-		*dst = *p;
-		dst = dst + 1;
+		*dp = *p;
+		dp = dp + 1;
 		p = p + 1;
 	}
-	*dst = 0;
+	*dp = 0;
 
 	/* Types are ignored */
-	if (strcomp (dst, "int") || strcomp (dst, "char"))
+	if (strcomp (dp, "int") || strcomp (dp, "char"))
 	{
 		/* Bypass pointer asterisk too */
 		read_sym ('*');
