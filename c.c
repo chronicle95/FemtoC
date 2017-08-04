@@ -63,6 +63,12 @@ int write_str (char *s)
 	return 1;
 }
 
+int write_strln (char *s)
+{
+	write_str (s);
+	write_chr (10);
+}
+
 /* Character test functions */
 
 int is_space(char c)
@@ -209,8 +215,7 @@ int parse_operand()
 	{
 		if (parse_operand())
 		{
-			write_chr (10);
-			write_str ("    neg");
+			write_strln ("    neg");
 			return 1;
 		}
 	}
@@ -218,8 +223,7 @@ int parse_operand()
 	{
 		if (parse_operand())
 		{
-			write_chr (10);
-			write_str ("    inv");
+			write_strln ("    inv");
 			return 1;
 		}
 	}
@@ -227,8 +231,7 @@ int parse_operand()
 	{
 		if (parse_operand())
 		{
-			write_chr (10);
-			write_str ("    pushi");
+			write_strln ("    pushi");
 			return 1;
 		}
 	}
@@ -239,15 +242,14 @@ int parse_operand()
 	else if (read_number (buf))
 	{
 		write_str ("    push ");
-		write_str (buf);
+		write_strln (buf);
 		return 1;
 	}
 	else if (read_id (buf))
 	{
 		write_str ("    pushl ");
-		write_str (buf);
-		write_chr (10);
-		write_str ("    pushi");
+		write_strln (buf);
+		write_strln ("    pushi");
 		return 1;
 	}
 	return 0;
@@ -266,32 +268,28 @@ int parse_expr()
 		if (read_number (buf))
 		{
 			write_str ("    push ");
-			write_str (buf);
+			write_strln (buf);
 		}
 		else if (read_id (buf))
 		{
 			write_str ("    pushl ");
-			write_str (buf);
-			write_chr (10);
-			write_str ("    pushi");
+			write_strln (buf);
+			write_strln ("    pushi");
 		}
 		else if (read_sym ('+'))
 		{
 			parse_operand ();
-			write_chr (10);
-			write_str ("    add");
+			write_strln ("    add");
 		}
 		else if (read_sym ('-'))
 		{
 			parse_operand ();
-			write_chr (10);
-			write_str ("    sub");
+			write_strln ("    sub");
 		}
 		else
 		{
 			return 0;
 		}
-		write_chr (10);
 	}
 	return 1;
 }
