@@ -11,6 +11,8 @@
  * add       - pop two topmost stack values
  *             and push their sum
  * sub       - same as addition, but subtraction
+ * mul       - same as addition, but multiplication
+ * div       - same as addition, but division
  */
 
 
@@ -258,6 +260,10 @@ int parse_operand()
 int parse_expr()
 {
 	char buf[16];
+	if (!parse_operand ())
+	{
+		return 0;
+	}
 	/* Any closing brackets, commas and semicolons
 	 * are considered the end of expression */
 	while (!read_sym (',')
@@ -265,11 +271,8 @@ int parse_expr()
 			&& !read_sym (')')
 			&& !read_sym (']'))
 	{
-		if (parse_operand ())
-		{
-			/* First operand for infix operations */
-		}
-		else if (read_sym ('+'))
+
+		if (read_sym ('+'))
 		{
 			parse_operand ();
 			write_strln ("    add");
@@ -278,6 +281,16 @@ int parse_expr()
 		{
 			parse_operand ();
 			write_strln ("    sub");
+		}
+		else if (read_sym ('*'))
+		{
+			parse_operand ();
+			write_strln ("    mul");
+		}
+		else if (read_sym ('/'))
+		{
+			parse_operand ();
+			write_strln ("    div");
 		}
 		else
 		{
