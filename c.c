@@ -265,16 +265,9 @@ int parse_expr()
 			&& !read_sym (')')
 			&& !read_sym (']'))
 	{
-		if (read_number (buf))
+		if (parse_operand ())
 		{
-			write_str ("    push ");
-			write_strln (buf);
-		}
-		else if (read_id (buf))
-		{
-			write_str ("    pushl ");
-			write_strln (buf);
-			write_strln ("    pushi");
+			/* First operand for infix operations */
 		}
 		else if (read_sym ('+'))
 		{
