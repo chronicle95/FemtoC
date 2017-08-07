@@ -17,8 +17,16 @@
 
 
 /* Global variables */
-char* p = 0; /* source code pointer */
-char* r = 0; /* output pointer */
+char* p = 0; /* source code pointer
+		points to current location */
+char* r = 0; /* output pointer
+		points to current location */
+char* f = 0; /* function arguments list.
+		points to the beginning
+		record goes as follow:
+
+		f-name0 f-arg0 f-arg1 ...
+		f-name1 f-arg0 f-arg1 ... */
 
 /* Utility functions */
 
@@ -69,6 +77,51 @@ int write_strln (char *s)
 {
 	write_str (s);
 	write_chr (10);
+}
+
+int write_arg(char *s)
+{
+	char *fp = f;
+	/* look for the end */
+	while (*fp)
+	{
+		fp = fp + 1;
+	}
+	/* append a word */
+	while (*s)
+	{
+		*fp = *s;
+		s = s + 1;
+		fp = fp + 1;
+	}
+	/* null-terminate */
+	*fp = ' ';
+	fp = fp + 1;
+	*fp = 0;
+	return 1;
+}
+
+char *find_arg(char *s, int *i)
+{
+	return 0;
+}
+
+int get_arg_id(char *fn, char *an, int *id)
+{
+	char *fp = f;
+	/* find function name first */
+	fn = find_arg (fn, id);
+	if (!fn)
+	{
+		return 0;
+	}
+	/* find argument and calculate index */
+	an = find_arg (fn, id);
+	if (!an)
+	{
+		return 0;
+	}
+	return 1;
 }
 
 /* Character test functions */
