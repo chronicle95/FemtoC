@@ -381,14 +381,27 @@ int parse_statement ()
 			return 0;
 		}
 
-		/* Functionc call */
+		/* Function call */
 		if (read_sym ('('))
 		{
+			write_str ("    pushn ");
+			write_strln (id);
+			write_strln ("    call");
 		}
 
-		/* Variable assignment */
+		/* Simple variable assignment */
 		else if (read_sym ('='))
 		{
+			if (!parse_expr ())
+			{
+				return 0;
+			}
+			/* TODO Assignment */
+		}
+
+		else
+		{
+			return 0;
 		}
 	}
 
