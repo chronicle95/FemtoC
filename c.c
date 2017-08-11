@@ -399,32 +399,20 @@ int parse_argslist ()
 {
 	char id[ID_SZ];
 
-	if (read_sym (')'))
-	{
-		return 1;
-	}
-
-	while (1)
+	while (!read_sym (')'))
 	{
 		if (!read_id (id))
 		{
-			break;
+			return 0;
 		}
 
 		write_arg (id);
 
-		if (!read_sym (','))
-		{
-			if (read_sym (')'))
-			{
-				return 1;
-			}
-
-			break;
-		}
+		/* Just ignore comma */
+		read_sym (',');
 	}
 
-	return 0;
+	return 1;
 }
 
 int parse_func(char* name)
