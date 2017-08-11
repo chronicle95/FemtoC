@@ -199,7 +199,7 @@ int read_id(char* dst)
 	*dp = 0;
 
 	/* Types are ignored */
-	if (strcomp (dp, "int") || strcomp (dp, "char"))
+	if (strcomp (dst, "int") || strcomp (dst, "char"))
 	{
 		/* Bypass pointer asterisks too */
 		while (read_sym ('*'));
@@ -397,6 +397,34 @@ int parse_statement ()
 
 int parse_argslist ()
 {
+	char id[ID_SZ];
+
+	if (read_sym (')'))
+	{
+		return 1;
+	}
+
+	while (1)
+	{
+		if (!read_id (id))
+		{
+			break;
+		}
+
+		write_arg (id);
+
+		if (!read_sym (','))
+		{
+			if (read_sym (')'))
+			{
+				return 1;
+			}
+
+			break;
+		}
+	}
+
+	return 0;
 }
 
 int parse_func(char* name)
@@ -487,6 +515,7 @@ int main()
 	printf ("Enter code:\n");
 	fgets (source, sizeof (source), stdin);
 	parse_root ();
+	printf ("----------------------\n");
 	puts (result);
 	return 0; /* SUCCESS */
 }
