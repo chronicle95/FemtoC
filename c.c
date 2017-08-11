@@ -13,10 +13,15 @@
  * sub       - same as addition, but subtraction
  * mul       - same as addition, but multiplication
  * div       - same as addition, but division
+ * ret       - return from subroutine
+ * call      - call a subroutine (address is on top of stack,
+ *             gets popped, return address is pushed)
  */
 
 
 /* Global variables */
+char ID_SZ = 20;
+
 char* p = 0; /* source code pointer
 		points to current location */
 char* r = 0; /* output pointer
@@ -103,6 +108,9 @@ int write_arg(char *s)
 
 char *find_arg(char *s, int *i)
 {
+	char *sp = s;
+	*i = 0;
+
 	return 0;
 }
 
@@ -192,8 +200,8 @@ int read_id(char* dst)
 	/* Types are ignored */
 	if (strcomp (dp, "int") || strcomp (dp, "char"))
 	{
-		/* Bypass pointer asterisk too */
-		read_sym ('*');
+		/* Bypass pointer asterisks too */
+		while (read_sym ('*'));
 		/* Read the actual identifier */
 		return read_id (dst);
 	}
@@ -265,7 +273,7 @@ int read_csym(char* dst)
 
 int parse_operand()
 {
-	char buf[16];
+	char buf[ID_SZ];
 	if (read_sym ('!'))
 	{
 		if (parse_operand())
@@ -312,7 +320,7 @@ int parse_operand()
 
 int parse_expr()
 {
-	char buf[16];
+	char buf[ID_SZ];
 	if (!parse_operand ())
 	{
 		return 0;
@@ -353,10 +361,6 @@ int parse_expr()
 	return 1;
 }
 
-int parse_func(char* name)
-{
-}
-
 int parse_gvar(char* name)
 {
 }
@@ -365,9 +369,71 @@ int parse_garr(char* name)
 {
 }
 
+int parse_statement ()
+{
+	char id[ID_SZ];
+
+	while (!read_sym (';'))
+	{
+		if (!read_id (id))
+		{
+			return 0;
+		}
+
+		/* Functionc call */
+		if (read_sym ('('))
+		{
+		}
+
+		/* Variable assignment */
+		else if (read_sym ('='))
+		{
+		}
+	}
+
+	return 1;
+}
+
+int parse_argslist ()
+{
+}
+
+int parse_func(char* name)
+{
+	/* Put label */
+	write_str (name);
+	write_strln (":");
+
+	/* Arguments */
+	if (!parse_argslist ())
+	{
+		return 0;
+	}
+
+	/* Statements */
+
+	if (!read_sym ('{'))
+	{
+		return 0;
+	}
+
+	while (!read_sym ('}'))
+	{
+		if (!parse_statement ())
+		{
+			return 0;
+		}
+	}
+
+	/* Return statement */
+	write_strln ("    ret");
+
+	return 1;
+}
+
 int parse_root()
 {
-	char id[16];
+	char id[ID_SZ];
 	/* Read identifier as a basis for any
 	 * statement within the program's root. */
 	while (read_id (id))
