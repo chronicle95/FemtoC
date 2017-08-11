@@ -181,6 +181,12 @@ int read_sym(char exp)
 	return 0;
 }
 
+int unread_sym()
+{
+	p = p - 1;
+	return 1;
+}
+
 int read_id(char* dst)
 {
 	char* dp = dst;
@@ -359,6 +365,8 @@ int parse_expr()
 			return 0;
 		}
 	}
+	/* Parent rules should take care of the terminator */
+	unread_sym ();
 	return 1;
 }
 
@@ -412,17 +420,24 @@ int parse_argslist ()
 {
 	char id[ID_SZ];
 
-	while (!read_sym (')'))
+	while (1)
 	{
 		if (!read_id (id))
 		{
+			if (read_sym (')'))
+			{
+				unread_sym ();
+				return 1;
+			}
 			return 0;
 		}
 
 		write_arg (id);
 
-		/* Just ignore comma */
-		read_sym (',');
+		if (!read_sym (','))
+		{
+			break;
+		}
 	}
 
 	return 1;
@@ -435,7 +450,7 @@ int parse_func(char* name)
 	write_strln (":");
 
 	/* Arguments */
-	if (!parse_argslist ())
+	if (!parse_argslist () || !read_sym (')'))
 	{
 		return 0;
 	}
