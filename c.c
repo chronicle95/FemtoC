@@ -65,6 +65,7 @@ int write_chr (char c)
 {
 	*r = c;
 	r++;
+	*r = 0;
 	return 1;
 }
 
@@ -476,5 +477,16 @@ int parse_root()
 
 int main()
 {
+	/* TODO: Dummy. Change in future */
+	char source[1024];
+	char result[1024];
+	char funargs[1024];
+	p = source;  *p = 0;
+	r = result;  *r = 0;
+	f = funargs; *f = 0;
+	printf ("Enter code:\n");
+	fgets (source, sizeof (source), stdin);
+	parse_root ();
+	puts (result);
 	return 0; /* SUCCESS */
 }
