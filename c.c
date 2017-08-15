@@ -306,15 +306,15 @@ int parse_invoke(char *name)
 {
 	while (1)
 	{
-		if (!parse_expr ())
+		if (parse_expr () || read_sym (','))
 		{
-			return 0;
+			continue;
 		}
-
-		if (!read_sym (',') && read_sym (')'))
+		else if (read_sym (')'))
 		{
 			break;
 		}
+		return 0;
 	}
 
 	write_str ("    pushl ");
@@ -506,7 +506,12 @@ int parse_func(char* name)
 	write_strln (":");
 
 	/* Arguments */
-	if (!parse_argslist () || !read_sym (')'))
+	if (!parse_argslist ())
+	{
+		return 0;
+	}
+
+	if (!read_sym (')'))
 	{
 		return 0;
 	}
@@ -587,7 +592,13 @@ int main()
 	printf ("Enter code:\n");
 	fgets (source, sizeof (source), stdin);
 	parse_root ();
-	printf ("----------------------\n");
+	while (p != source)
+	{
+		putchar (' ');
+		p = p - 1;
+	}
+	putchar ('^');
+	printf ("\n----------------------\n");
 	puts (result);
 	return 0; /* SUCCESS */
 }
