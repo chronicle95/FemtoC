@@ -110,14 +110,38 @@ int write_arg(char *s)
 char *find_arg(char *s, int *i)
 {
 	char *sp = s;
+	char *fp = f;
 	*i = 0;
+
+	while (*fp)
+	{
+		if (*fp == *sp)
+		{
+			sp = sp + 1;
+		}
+		else
+		{
+			sp = s;
+		}
+
+		if (*sp == 0)
+		{
+			return 1;
+		}
+
+		if (*fp == ' ')
+		{
+			*i = *i + 1;
+		}
+
+		fp = fp + 1;
+	}
 
 	return 0;
 }
 
 int get_arg_id(char *fn, char *an, int *id)
 {
-	char *fp = f;
 	/* find function name first */
 	fn = find_arg (fn, id);
 	if (!fn)
@@ -392,7 +416,7 @@ int parse_statement ()
 		/* Function call */
 		if (read_sym ('('))
 		{
-			write_str ("    pushn ");
+			write_str ("    pushl ");
 			write_strln (id);
 			write_strln ("    call");
 		}
@@ -405,6 +429,9 @@ int parse_statement ()
 				return 0;
 			}
 			/* TODO Assignment */
+			write_str ("    ; Store to `");
+			write_str (id);
+			write_strln ("` variable");
 		}
 
 		else
@@ -445,6 +472,8 @@ int parse_argslist ()
 
 int parse_func(char* name)
 {
+	write_arg (name);
+
 	/* Put label */
 	write_str (name);
 	write_strln (":");
