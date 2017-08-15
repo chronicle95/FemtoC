@@ -304,7 +304,24 @@ int read_csym(char* dst)
 
 int parse_invoke(char *name)
 {
-	return 0;
+	while (1)
+	{
+		if (!parse_expr ())
+		{
+			return 0;
+		}
+
+		if (!read_sym (',') && read_sym (')'))
+		{
+			break;
+		}
+	}
+
+	write_str ("    pushl ");
+	write_strln (name);
+	write_strln ("    call");
+
+	return 1;
 }
 
 int parse_operand()
