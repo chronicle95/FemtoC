@@ -302,6 +302,11 @@ int read_csym(char* dst)
 /* Parse and process
  * functions */
 
+int parse_invoke(char *name)
+{
+	return 0;
+}
+
 int parse_operand()
 {
 	char buf[ID_SZ];
@@ -341,10 +346,17 @@ int parse_operand()
 	}
 	else if (read_id (buf))
 	{
-		write_str ("    pushl ");
-		write_strln (buf);
-		write_strln ("    pushi");
-		return 1;
+		if (read_sym ('('))
+		{
+			return parse_invoke (buf);
+		}
+		else
+		{
+			write_str ("    pushl ");
+			write_strln (buf);
+			write_strln ("    pushi");
+			return 1;
+		}
 	}
 	return 0;
 }
@@ -416,9 +428,7 @@ int parse_statement ()
 		/* Function call */
 		if (read_sym ('('))
 		{
-			write_str ("    pushl ");
-			write_strln (id);
-			write_strln ("    call");
+			return parse_invoke (id);
 		}
 
 		/* Simple variable assignment */
