@@ -187,9 +187,27 @@ int is_id(char c)
 
 int read_space()
 {
-	while (is_space (*p))
+	while (1)
 	{
-		p = p + 1;
+		/* Ignore comments */
+		if ((*p == '/') && (*(p+1) == '*'))
+		{
+			while (!((*p == '*') && (*(p+1) == '/')))
+			{
+				p = p + 1;
+			}
+			p = p + 2;
+		}
+
+		/* Ignore spaces */
+		if (is_space (*p))
+		{
+			p = p + 1;
+		}
+		else
+		{
+			break;
+		}
 	}
 	return 1;
 }
