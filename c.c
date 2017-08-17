@@ -16,6 +16,8 @@
  * ret       - return from subroutine
  * call      - call a subroutine (address is on top of stack,
  *             gets popped, return address is pushed)
+ * jump      - unconditional go to label pointed at the stack head
+ *             head is popped, as usual
  */
 
 
@@ -467,6 +469,7 @@ int parse_statement ()
 
 	while (!read_sym (';'))
 	{
+	re_read:
 		if (!read_id (id))
 		{
 			return 0;
@@ -480,6 +483,7 @@ int parse_statement ()
 				return 0;
 			}
 			write_strln ("    ret");
+			goto re_read;
 		}
 		else if (strcomp (id, "if"))
 		{
@@ -487,6 +491,7 @@ int parse_statement ()
 			{
 				return 0;
 			}
+			goto re_read;
 		}
 		else if (strcomp (id, "while"))
 		{
@@ -494,6 +499,18 @@ int parse_statement ()
 			{
 				return 0;
 			}
+			goto re_read;
+		}
+		else if (strcomp (id, "goto"))
+		{
+			if (!read_id (id))
+			{
+				return 0;
+			}
+			write_str ("    pushl __");
+			write_strln (id);
+			write_strln ("    jump");
+			continue;
 		}
 
 		/* Function call */
@@ -513,6 +530,14 @@ int parse_statement ()
 			write_str ("    ; Store to `");
 			write_str (id);
 			write_strln ("` variable");
+		}
+
+		/* Label */
+		else if (read_sym (':'))
+		{
+			write_str ("__");
+			write_str (id);
+			write_strln (":");
 		}
 
 		else
