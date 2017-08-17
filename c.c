@@ -441,12 +441,24 @@ int parse_expr()
 	return 1;
 }
 
+int parse_conditional()
+{
+	return 0;
+}
+
+int parse_loop_while()
+{
+	return 0;
+}
+
 int parse_gvar(char* name)
 {
+	return 0;
 }
 
 int parse_garr(char* name)
 {
+	return 0;
 }
 
 int parse_statement ()
@@ -458,6 +470,30 @@ int parse_statement ()
 		if (!read_id (id))
 		{
 			return 0;
+		}
+
+		/* Keywords checked first */
+		if (strcomp (id, "return"))
+		{
+			if (!parse_expr ())
+			{
+				return 0;
+			}
+			write_strln ("    ret");
+		}
+		else if (strcomp (id, "if"))
+		{
+			if (!parse_conditional ())
+			{
+				return 0;
+			}
+		}
+		else if (strcomp (id, "while"))
+		{
+			if (!parse_loop_while ())
+			{
+				return 0;
+			}
 		}
 
 		/* Function call */
