@@ -28,12 +28,11 @@ char* p = 0; /* source code pointer
 		points to current location */
 char* r = 0; /* output pointer
 		points to current location */
-char* f = 0; /* function arguments list.
-		points to the beginning
+char* f = 0; /* function locals list.
+		points to the beginning.
 		record goes as follow:
 
-		f-name0 f-arg0 f-arg1 ...
-		f-name1 f-arg0 f-arg1 ... */
+		f-arg f-arg f-var ... */
 
 /* Utility functions */
 
