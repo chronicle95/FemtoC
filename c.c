@@ -466,6 +466,8 @@ int parse_statement ()
 
 	while (!read_sym (';'))
 	{
+		/* Label `re_read` is used when internal construct
+		 * ends with a symbol different from `;` */
 re_read:
 		if (!read_id (id))
 		{
@@ -480,7 +482,7 @@ re_read:
 				return 0;
 			}
 			write_strln ("    ret");
-			goto re_read;
+			continue;
 		}
 		else if (strcomp (id, "if"))
 		{
