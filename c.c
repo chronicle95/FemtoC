@@ -139,6 +139,8 @@ char *find_arg(char *s, int *i)
 		fp = fp + 1;
 	}
 
+	*i = -1;
+
 	return 0;
 }
 
@@ -392,6 +394,16 @@ int parse_operand()
 			write_str ("    pushl ");
 			write_strln (buf);
 			write_strln ("    pushi");
+			return 1;
+		}
+	}
+	else if (read_sym ('-'))
+	{
+		if (parse_operand ())
+		{
+			write_strln ("    inv");
+			write_strln ("    push 1");
+			write_strln ("    add");
 			return 1;
 		}
 	}
