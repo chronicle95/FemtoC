@@ -24,15 +24,15 @@
 /* Global variables */
 char ID_SZ = 20;
 
-char* p = 0; /* source code pointer
-		points to current location */
-char* r = 0; /* output pointer
-		points to current location */
-char* f = 0; /* function locals list.
-		points to the beginning.
-		record goes as follow:
+char* src_p = 0; /* source code pointer
+		    points to current location */
+char* out_p = 0; /* output pointer
+		    points to current location */
+char* loc_p = 0; /* function locals list.
+		    points to the beginning.
+		    record goes as follow:
 
-		f-arg f-arg f-var ... */
+		    f-arg f-arg f-var ... */
 
 /* Utility functions */
 
@@ -64,9 +64,9 @@ int strcomp(char* a, char* b)
 
 int write_chr (char c)
 {
-	*r = c;
-	r++;
-	*r = 0;
+	*out_p = c;
+	out_p = out_p + 1;
+	*out_p = 0;
 	return 1;
 }
 
@@ -86,9 +86,9 @@ int write_strln (char *s)
 	write_chr (10);
 }
 
-int write_arg(char *s)
+int write_loc(char *s)
 {
-	char *fp = f;
+	char *fp = loc_p;
 	/* look for the end */
 	while (*fp)
 	{
@@ -108,10 +108,10 @@ int write_arg(char *s)
 	return 1;
 }
 
-char *find_arg(char *s, int *i)
+char *find_loc(char *s, int *i)
 {
 	char *sp = s;
-	char *fp = f;
+	char *fp = loc_p;
 	*i = 0;
 
 	while (*fp)
@@ -141,23 +141,6 @@ char *find_arg(char *s, int *i)
 	*i = -1;
 
 	return 0;
-}
-
-int get_arg_id(char *fn, char *an, int *id)
-{
-	/* find function name first */
-	fn = find_arg (fn, id);
-	if (!fn)
-	{
-		return 0;
-	}
-	/* find argument and calculate index */
-	an = find_arg (fn, id);
-	if (!an)
-	{
-		return 0;
-	}
-	return 1;
 }
 
 /* Character test functions */
@@ -193,19 +176,19 @@ int read_space()
 	while (1)
 	{
 		/* Ignore comments */
-		if ((*p == '/') && (*(p+1) == '*'))
+		if ((*src_p == '/') && (*(src_p+1) == '*'))
 		{
-			while (!((*p == '*') && (*(p+1) == '/')))
+			while (!((*src_p == '*') && (*(src_p+1) == '/')))
 			{
-				p = p + 1;
+				src_p = src_p + 1;
 			}
-			p = p + 2;
+			src_p = src_p + 2;
 		}
 
 		/* Ignore spaces */
-		if (is_space (*p))
+		if (is_space (*src_p))
 		{
-			p = p + 1;
+			src_p = src_p + 1;
 		}
 		else
 		{
@@ -218,9 +201,9 @@ int read_space()
 int read_sym(char exp)
 {
 	read_space ();
-	if (*p == exp)
+	if (*src_p == exp)
 	{
-		p = p + 1;
+		src_p = src_p + 1;
 		return 1;
 	}
 	return 0;
@@ -228,7 +211,7 @@ int read_sym(char exp)
 
 int unread_sym()
 {
-	p = p - 1;
+	src_p = src_p - 1;
 	return 1;
 }
 
@@ -237,15 +220,15 @@ int read_id(char* dst)
 	char* dp = dst;
 
 	read_space ();
-	if (!is_id0 (*p))
+	if (!is_id0 (*src_p))
 	{
 		return 0;
 	}
-	while (is_id (*p))
+	while (is_id (*src_p))
 	{
-		*dp = *p;
+		*dp = *src_p;
 		dp = dp + 1;
-		p = p + 1;
+		src_p = src_p + 1;
 	}
 	*dp = 0;
 
@@ -264,15 +247,15 @@ int read_id(char* dst)
 int read_number(char* dst)
 {
 	read_space ();
-	if (!is_digit (*p))
+	if (!is_digit (*src_p))
 	{
 		return 0;
 	}
-	while (is_digit (*p))
+	while (is_digit (*src_p))
 	{
-		*dst = *p;
+		*dst = *src_p;
 		dst = dst + 1;
-		p = p + 1;
+		src_p = src_p + 1;
 	}
 	*dst = 0;
 	return 1;
@@ -284,16 +267,16 @@ int read_cstr(char* dst)
 	{
 		return 0;
 	}
-	p = p + 1;
-	while (*p != '\"')
+	src_p = src_p + 1;
+	while (*src_p != '\"')
 	{
-		if (*p == '\\')
+		if (*src_p == '\\')
 		{
-			p = p + 1;
+			src_p = src_p + 1;
 		}
-		*dst = *p;
+		*dst = *src_p;
 		dst = dst + 1;
-		p = p + 1;
+		src_p = src_p + 1;
 	}
 	*dst = 0;
 	return 1;
@@ -305,16 +288,16 @@ int read_csym(char* dst)
 	{
 		return 0;
 	}
-	p = p + 1;
-	while (*p != '\'')
+	src_p = src_p + 1;
+	while (*src_p != '\'')
 	{
-		if (*p == '\\')
+		if (*src_p == '\\')
 		{
-			p = p + 1;
+			src_p = src_p + 1;
 		}
-		*dst = *p;
+		*dst = *src_p;
 		dst = dst + 1;
-		p = p + 1;
+		src_p = src_p + 1;
 	}
 	*dst = 0;
 	return 1;
@@ -576,7 +559,7 @@ int parse_argslist ()
 			return 0;
 		}
 
-		write_arg (id);
+		write_loc (id);
 
 		if (!read_sym (','))
 		{
@@ -589,7 +572,7 @@ int parse_argslist ()
 
 int parse_func(char* name)
 {
-	write_arg (name);
+	write_loc (name);
 
 	/* Put label */
 	write_str (name);
@@ -675,17 +658,17 @@ int main()
 	/* TODO: Dummy. Change in future */
 	char source[1024];
 	char result[1024];
-	char funargs[1024];
-	p = source;  *p = 0;
-	r = result;  *r = 0;
-	f = funargs; *f = 0;
+	char locals[1024];
+	src_p = source;  *src_p = 0;
+	out_p = result;  *out_p = 0;
+	loc_p = locals;  *loc_p = 0;
 	printf ("Enter code:\n");
 	fgets (source, sizeof (source), stdin);
 	parse_root ();
-	while (p != source)
+	while (src_p != source)
 	{
 		putchar (' ');
-		p = p - 1;
+		src_p = src_p - 1;
 	}
 	putchar ('^');
 	printf ("\n----------------------\n");
