@@ -357,7 +357,10 @@ int parse_operand()
 	}
 	else if (read_sym ('('))
 	{
-		return parse_expr();
+		if (parse_expr ())
+		{
+			return read_sym (')');
+		}
 	}
 	else if (read_number (buf))
 	{
@@ -463,7 +466,7 @@ int parse_statement ()
 
 	while (!read_sym (';'))
 	{
-	re_read:
+re_read:
 		if (!read_id (id))
 		{
 			return 0;
