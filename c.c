@@ -18,6 +18,12 @@
  *             gets popped, return address is pushed)
  * jump      - unconditional go to label pointed at the stack head
  *             head is popped, as usual
+ * cmpeq     - comparison operators. pop two top-most values and
+ * cmpne       push the result on stack
+ * cmplt
+ * cmpgt
+ * cmpge
+ * cmple
  */
 
 
@@ -429,6 +435,68 @@ int parse_expr()
 		{
 			parse_operand ();
 			write_strln ("    div");
+		}
+		else if (read_sym ('='))
+		{
+			if (read_sym ('='))
+			{
+				parse_operand ();
+				write_strln ("    cmpeq");
+			}
+			else
+			{
+				return 0;
+			}
+		}
+		else if (read_sym ('<'))
+		{
+			if (read_sym ('='))
+			{
+				if (!parse_operand ())
+				{
+					return 0;
+				}
+				write_strln ("    cmple");
+			}
+			else
+			{
+				if (!parse_operand ())
+				{
+					return 0;
+				}
+				write_strln ("    cmplt");
+			}
+		}
+		else if (read_sym ('>'))
+		{
+			if (read_sym ('='))
+			{
+				if (!parse_operand ())
+				{
+					return 0;
+				}
+				write_strln ("    cmpge");
+			}
+			else
+			{
+				if (!parse_operand ())
+				{
+					return 0;
+				}
+				write_strln ("    cmpgt");
+			}
+		}
+		else if (read_sym ('!'))
+		{
+			if (!read_sym ('='))
+			{
+				return 0;
+			}
+			if (!parse_operand ())
+			{
+				return 0;
+			}
+			write_strln ("    cmpne");
 		}
 		else
 		{
