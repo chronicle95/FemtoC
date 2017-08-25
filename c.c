@@ -56,11 +56,11 @@ char* gbl_p = 0; /* global variable list.
 
 int strcomp(char* a, char* b)
 {
-	if (a == 0 && b == 0)
+	if ((a == 0) && (b == 0))
 	{
 		return 1;
 	}
-	if (a == 0 || b == 0)
+	if ((a == 0) || (b == 0))
 	{
 		return 0;
 	}
@@ -165,20 +165,20 @@ char *find_loc(char *s, int *i)
 
 int is_space(char c)
 {
-	return (c == ' ' || c == 10
-			|| c == 13  || c == 8);
+	return ((c == ' ') || (c == 10)
+			|| (c == 13)  || (c == 8));
 }
 
 int is_digit(char c)
 {
-	return (c >= '0' && c <= '9');
+	return ((c >= '0') && (c <= '9'));
 }
 
 int is_id0(char c)
 {
-	return (c == '_'
-			|| (c >= 'A' && c <= 'Z')
-			|| (c >= 'a' && c <= 'z'));
+	return ((c == '_')
+			|| ((c >= 'A') && (c <= 'Z'))
+			|| ((c >= 'a') && (c <= 'z')));
 }
 
 int is_id(char c)
