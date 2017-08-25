@@ -1,12 +1,14 @@
 #include <stdio.h>
 
 /* Assembly language brief
- * 
+ *
+ * pushsf    - put stack frame absolute address onto head
+ *             this address points to return address on stack 
  * push <n>  - put constant on stack
  * pushl <l> - put label address on stack
  * pushi     - pop stack head as address
  *             and push value at this address
- * neg       - logically invert stack head
+ * not       - logically invert stack head
  * inv       - bitwise inversion of stack head
  * add       - pop two topmost stack values
  *             and push their sum
@@ -24,6 +26,11 @@
  * cmpgt
  * cmpge
  * cmple
+ * and       - bitwise operation. two top-most stack values
+ *             get replaced with the result
+ * or        - bitwise operation. two top-most stack values
+ *             get replaced with the result
+ * swap      - two top-most stack values exchange their places
  */
 
 
@@ -39,6 +46,11 @@ char* loc_p = 0; /* function locals list.
 		    record goes as follow:
 
 		    f-arg f-arg f-var ... */
+char* gbl_p = 0; /* global variable list.
+		    points to the beginning.
+		    record goes as follow:
+
+		    var0 var1 ... */
 
 /* Utility functions */
 
@@ -341,7 +353,7 @@ int parse_operand()
 	{
 		if (parse_operand())
 		{
-			write_strln ("    neg");
+			write_strln ("    not");
 			return 1;
 		}
 	}
@@ -497,6 +509,52 @@ int parse_expr()
 				return 0;
 			}
 			write_strln ("    cmpne");
+		}
+		else if (read_sym ('&'))
+		{
+			if (read_sym ('&'))
+			{
+				if (!parse_operand ())
+				{
+					return 0;
+				}
+				write_strln ("    not");
+				write_strln ("    swap");
+				write_strln ("    not");
+				write_strln ("    or");
+				write_strln ("    not");
+			}
+			else
+			{
+				if (!parse_operand ())
+				{
+					return 0;
+				}
+				write_strln ("    and");
+			}
+		}
+		else if (read_sym ('|'))
+		{
+			if (read_sym ('|'))
+			{
+				if (!parse_operand ())
+				{
+					return 0;
+				}
+				write_strln ("    not");
+				write_strln ("    swap");
+				write_strln ("    not");
+				write_strln ("    and");
+				write_strln ("    not");
+			}
+			else
+			{
+				if (!parse_operand ())
+				{
+					return 0;
+				}
+				write_strln ("    or");
+			}
 		}
 		else
 		{
