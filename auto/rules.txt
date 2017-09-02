@@ -1,0 +1,41 @@
+program ::== global_statements
+ws ::== " " | "\r" | "\t" | "\n"
+ws_l ::== ws ws_l | $
+global_statements ::== global_statement global_statements | $
+global_statement ::== global_var | function_decl
+data_type ::== ws_l "char" pointer | ws_l "int" pointer
+pointer ::== ws_l "*" | $
+sign ::== ws_l "-" | $
+alpha ::== AZ# | az#
+digit ::== 09#
+digits ::== digit digits | $
+number ::== ws_l sign digit digits
+global_var ::== data_type identifier global_var_value ws_l ";"
+global_var_value ::== ws_l "=" number | ws_l "[" number ws_l "]"
+function_decl ::== data_type identifier ws_l "(" function_args ws_l ")" block
+block ::== ws_l "{" statements ws_l "}"
+statements ::== statement statements | $
+statement ::== local_var | function_call | kwrd | assignment
+local_var_value ::== ws_l "=" number | ws_l "[" number ws_l "]"
+local_var ::== data_type identifier local_var_value ws_l ";"
+function_call ::== identifier ws_l "(" call_args ws_l ")" ws_l ";"
+kwrd_while ::== ws_l "while" ws_l "(" expression ws_l ")" block
+kwrd_if ::== ws_l "if" ws_l "(" expression ws_l ")" block
+kwrd_break ::== ws_l "break" ws_l ";"
+kwrd_return ::== ws_l "return" expression ";"
+kwrd ::== kwrd_if | kwrd_while | kwrd_break | kwrd_return
+expr_unary ::== ws_l "~" operand | ws_l "*" operand | ws_l "!" operand
+operand ::== expr_unary | number | ws_l "(" expression ws_l ")" 
+addop ::== "+" | "-" | "&" | "|" | "^"
+expr_addop ::== operand ws_l addop operand | operand
+mulop ::== "*" | "/"
+expr_mulop ::== expr_addop ws_l mulop expr_addop | operand
+compop ::== ">=" | "<=" | ">" | "<" | "==" | "!="
+expr_compop ::== expr_mulop compop expr_mulop | operand
+logop ::== "&&" | "||" | "^^"
+expression ::== expr_compop ws_l logop expr_compop | operand
+id_sym ::== alpha | digit
+id_first ::== "_" | alpha
+id_symbols ::== id_sym id_symbols | $
+identifier ::== ws_l id_first id_symbols
+assignment ::== operand ws_l "=" operand
