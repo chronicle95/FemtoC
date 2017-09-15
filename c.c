@@ -15,6 +15,7 @@
  * sub       - same as addition, but subtraction
  * mul       - same as addition, but multiplication
  * div       - same as addition, but division
+ * mod       - same as addtiion, but remainder of division
  * ret       - return from subroutine
  * call      - call a subroutine (address is on top of stack,
  *             gets popped, return address is pushed)
@@ -93,7 +94,7 @@ int write_str (char *s)
 	while (*s)
 	{
 		write_chr (*s);
-		s++;
+		s = s + 1;
 	}
 	return 1;
 }
@@ -102,11 +103,48 @@ int write_strln (char *s)
 {
 	write_str (s);
 	write_chr (10);
+	return 1;
 }
 
-int write_loc(char *s)
+int write_num (int n)
 {
-	char *fp = loc_p;
+	char buf[10];
+	int i = 0;
+
+	if (n == 0)
+	{
+		write_str ("0");
+		return 1;
+	}
+
+	while (n > 0)
+	{
+		*(buf + i) = '0' + (n % 10);
+		n = n / 10;
+		i = i + 1;
+	}
+
+	i = i - 1;
+	while (i > 0)
+	{
+		write_chr (*(buf + i));
+		i = i - 1;
+	}
+	write_chr (*buf);
+
+	return 1;
+}
+
+int write_numln (int n)
+{
+	write_num (n);
+	write_chr (10);
+	return 1;
+}
+
+int store_var(char *ptr, char *s)
+{
+	char *fp = ptr;
 	/* look for the end */
 	while (*fp)
 	{
@@ -126,10 +164,11 @@ int write_loc(char *s)
 	return 1;
 }
 
-char *find_loc(char *s, int *i)
+int find_var(char *ptr, char *s, int *i)
 {
+	/* TODO: Imrove search function */
 	char *sp = s;
-	char *fp = loc_p;
+	char *fp = ptr;
 	*i = 0;
 
 	while (*fp)
@@ -349,6 +388,7 @@ int parse_invoke(char *name)
 int parse_operand()
 {
 	char buf[ID_SZ];
+	int idx = 0;
 	if (read_sym ('!'))
 	{
 		if (parse_operand())
@@ -356,6 +396,30 @@ int parse_operand()
 			write_strln ("    not");
 			return 1;
 		}
+	}
+	else if (read_sym ('&'))
+	{
+		if (!read_id (buf))
+		{
+			return 0;
+		}
+		if (find_var (loc_p, buf, &idx))
+		{
+			write_strln ("    pushsf");
+			write_str ("    push ");
+			write_numln (idx);
+			write_strln ("    add");
+		}
+		else if (find_var (gbl_p, buf, &idx))
+		{
+			write_str ("    pushl ");
+			write_strln (buf);
+		}
+		else
+		{
+			return 0;
+		}
+		return 1;
 	}
 	else if (read_sym ('~'))
 	{
@@ -394,9 +458,24 @@ int parse_operand()
 		}
 		else
 		{
-			write_str ("    pushl ");
-			write_strln (buf);
-			write_strln ("    pushi");
+			if (find_var (loc_p, buf, &idx))
+			{
+				write_strln ("    pushsf");
+				write_str ("    push ");
+				write_numln (idx);
+				write_strln ("    add");
+				write_strln ("    pushi");
+			}
+			else if (find_var (gbl_p, buf, &idx))
+			{
+				write_str ("    pushl ");
+				write_strln (buf);
+				write_strln ("    pushi");
+			}
+			else
+			{
+				return 0;
+			}
 			return 1;
 		}
 	}
@@ -447,6 +526,11 @@ int parse_expr()
 		{
 			parse_operand ();
 			write_strln ("    div");
+		}
+		else if (read_sym ('%'))
+		{
+			parse_operand ();
+			write_strln ("    mod");
 		}
 		else if (read_sym ('='))
 		{
@@ -690,7 +774,7 @@ int parse_argslist ()
 			return 0;
 		}
 
-		write_loc (id);
+		store_var (loc_p, id);
 
 		if (!read_sym (','))
 		{
@@ -703,7 +787,12 @@ int parse_argslist ()
 
 int parse_func(char* name)
 {
-	write_loc (name);
+	/* Put function name to locals list so that
+	 * first argument index starts with 1 */
+	store_var (loc_p, name);
+
+	/* Put function name to globals list */
+	store_var (gbl_p, name);
 
 	/* Put label */
 	write_str (name);
@@ -790,9 +879,11 @@ int main()
 	char source[1024];
 	char result[1024];
 	char locals[1024];
+	char globals[1024];
 	src_p = source;  *src_p = 0;
 	out_p = result;  *out_p = 0;
 	loc_p = locals;  *loc_p = 0;
+	gbl_p = globals; *gbl_p = 0;
 	printf ("Enter code:\n");
 	fgets (source, sizeof (source), stdin);
 	parse_root ();
