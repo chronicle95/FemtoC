@@ -21,6 +21,9 @@
  *             gets popped, return address is pushed)
  * jump      - unconditional go to label pointed at the stack head
  *             head is popped, as usual
+ * nzjump    - conditional jump if non-zero. stack head gets popped
+ *             twice: first time - conditional value, second time -
+ *             it takes the address
  * cmpeq     - comparison operators. pop two top-most values and
  * cmpne       push the result on stack
  * cmplt
@@ -52,8 +55,38 @@ char* gbl_p = 0; /* global variable list.
 		    record goes as follow:
 
 		    var0 var1 ... */
+int lbl_cnt = 0; /* Label counter. Used for temporary labels */
 
 /* Utility functions */
+
+int gen_label(char *dst)
+{
+	int n;
+	n = lbl_cnt;
+	*dst = '_';
+	dst = dst + 1;
+	*dst = 'L';
+	dst = dst + 1;
+	*dst = '_';
+	dst = dst + 1;
+	if (n == 0)
+	{
+		*dst = 'a';
+		dst = dst + 1;
+	}
+	else
+	{
+		while (n > 0)
+		{
+			*dst = 'a' + (n % 26);
+			dst = dst + 1;
+			n = n / 26;
+		}
+	}
+	*dst = 0;
+	lbl_cnt = lbl_cnt + 1;
+	return 1;
+}
 
 int strcomp(char* a, char* b)
 {
@@ -363,6 +396,7 @@ int read_csym(char* dst)
 /* Parse and process
  * functions */
 
+int parse_expr();
 int parse_invoke(char *name)
 {
 	while (1)
@@ -650,9 +684,51 @@ int parse_expr()
 	return 1;
 }
 
+int parse_statement();
 int parse_conditional()
 {
-	return 0;
+	char lbl[ID_SZ];
+
+	gen_label (lbl);
+
+	if (!read_sym ('('))
+	{
+		return 0;
+	}
+
+	if (!parse_expr ())
+	{
+		return 0;
+	}
+
+	if (!read_sym (')'))
+	{
+		return 0;
+	}
+
+	write_str ("    nzjump ");
+	write_strln (lbl);
+
+	if (!read_sym ('{'))
+	{
+		if (!parse_statement ())
+		{
+			return 0;
+		}
+	}
+
+	while (!read_sym ('}'))
+	{
+		if (!parse_statement ())
+		{
+			return 0;
+		}
+	}
+
+	write_str (lbl);
+	write_strln (":");
+
+	return 1;
 }
 
 int parse_loop_while()
