@@ -299,6 +299,29 @@ int read_sym(char exp)
 	return 0;
 }
 
+int read_sym_s(char *exp_s)
+{
+	int count;
+
+	read_space ();
+
+	count = 0;
+	while (*exp_s && (*src_p == *exp_s))
+	{
+		src_p = src_p + 1;
+		exp_s = exp_s + 1;
+		count = count + 1;
+	}
+
+	if (*exp_s || is_id (*src_p))
+	{
+		src_p = src_p - count;
+		return 0;
+	}
+
+	return 1;
+}
+
 int unread_sym()
 {
 	src_p = src_p - 1;
