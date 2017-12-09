@@ -731,6 +731,7 @@ int parse_conditional()
 	}
 
 	write_strln ("    dup");
+	write_strln ("    not");
 	write_str ("    pushl ");
 	write_strln (lbl);
 	write_strln ("    nzjump");
@@ -757,7 +758,6 @@ int parse_conditional()
 		write_strln (":");
 
 		gen_label (lbl);
-		write_strln ("    not");
 		write_str ("    pushl ");
 		write_strln (lbl);
 		write_strln ("    nzjump");
