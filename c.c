@@ -859,87 +859,99 @@ int parse_statement ()
 {
 	char id[ID_SZ];
 
-	while (!read_sym (';'))
+	/* Allow for empty statement */
+	if (read_sym (';'))
 	{
-		/* Label `re_read` is used when internal construct
-		 * ends with a symbol different from `;` */
-re_read:
+		return 1;
+	}
+
+	/*
+	 *  Keywords checked first
+	 */
+	else if (read_sym_s ("return"))
+	{
+		if (!parse_expr ())
+		{
+			return 0;
+		}
+		write_strln ("    ret");
+		goto semicolon_end;
+	}
+	else if (read_sym_s ("if"))
+	{
+		if (!parse_conditional ())
+		{
+			return 0;
+		}
+		// brace or semicolon
+		return 1;
+	}
+	else if (read_sym_s ("while"))
+	{
+		if (!parse_loop_while ())
+		{
+			return 0;
+		}
+		// brace or semicolon
+		return 1;
+	}
+	else if (read_sym_s ("goto"))
+	{
 		if (!read_id (id))
 		{
 			return 0;
 		}
+		write_str ("    pushl __");
+		write_strln (id);
+		write_strln ("    jump");
+		goto semicolon_end;
+	}
 
-		/* Keywords checked first */
-		if (strcomp (id, "return"))
-		{
-			if (!parse_expr ())
-			{
-				return 0;
-			}
-			write_strln ("    ret");
-			continue;
-		}
-		else if (strcomp (id, "if"))
-		{
-			if (!parse_conditional ())
-			{
-				return 0;
-			}
-			goto re_read;
-		}
-		else if (strcomp (id, "while"))
-		{
-			if (!parse_loop_while ())
-			{
-				return 0;
-			}
-			goto re_read;
-		}
-		else if (strcomp (id, "goto"))
-		{
-			if (!read_id (id))
-			{
-				return 0;
-			}
-			write_str ("    pushl __");
-			write_strln (id);
-			write_strln ("    jump");
-			continue;
-		}
+	/* Otherwise check for identifier */
+	else if (!read_id (id))
+	{
+		return 0;
+	}
 
-		/* Function call */
-		if (read_sym ('('))
-		{
-			return parse_invoke (id);
-		}
 
-		/* Simple variable assignment */
-		else if (read_sym ('='))
-		{
-			if (!parse_expr ())
-			{
-				return 0;
-			}
-			/* TODO Assignment */
-			write_str ("    ; Store to `");
-			write_str (id);
-			write_strln ("` variable");
-		}
+	/* Function call */
+	if (read_sym ('('))
+	{
+		return parse_invoke (id);
+	}
 
-		/* Label */
-		else if (read_sym (':'))
-		{
-			write_str ("__");
-			write_str (id);
-			write_strln (":");
-		}
-
-		else
+	/* Simple variable assignment */
+	else if (read_sym ('='))
+	{
+		if (!parse_expr ())
 		{
 			return 0;
 		}
+		/* TODO Assignment */
+		write_str ("    ; Store to `");
+		write_str (id);
+		write_strln ("` variable");
 	}
 
+	/* Label */
+	else if (read_sym (':'))
+	{
+		write_str ("__");
+		write_str (id);
+		write_strln (":");
+		return 1;
+	}
+
+	else
+	{
+		return 0;
+	}
+
+semicolon_end:
+	if (!read_sym (';'))
+	{
+		return 0;
+	}
 	return 1;
 }
 
