@@ -22,8 +22,7 @@
  * jump      - unconditional go to label pointed at the stack head
  *             head is popped, as usual
  * nzjump    - conditional jump if non-zero. stack head gets popped
- *             twice: first time - conditional value, second time -
- *             it takes the address
+ *             twice: first time - address, second time - value
  * cmpeq     - comparison operators. pop two top-most values and
  * cmpne       push the result on stack
  * cmplt
@@ -783,9 +782,9 @@ int parse_conditional()
 	}
 	else
 	{
-		write_strln ("    drop");
 		write_str (lbl);
 		write_strln (":");
+		write_strln ("    drop");
 	}
 
 	return 1;
@@ -793,7 +792,57 @@ int parse_conditional()
 
 int parse_loop_while()
 {
-	return 0;
+	char lbl1[ID_SZ];
+	char lbl2[ID_SZ];
+
+	gen_label (lbl1);
+	gen_label (lbl2);
+
+	if (!read_sym ('('))
+	{
+		return 0;
+	}
+
+	write_str (lbl1);
+	write_strln (":");
+
+	if (!parse_expr ())
+	{
+		return 0;
+	}
+
+	if (!read_sym (')'))
+	{
+		return 0;
+	}
+
+	write_strln ("    not");
+	write_str ("    pushl ");
+	write_strln (lbl2);
+	write_strln ("    nzjump");
+
+	if (read_sym ('{'))
+	{
+		while (!read_sym ('}'))
+		{
+			if (!parse_statement ())
+			{
+				return 0;
+			}
+		}
+	}
+	else if (!parse_statement ())
+	{
+		return 0;
+	}
+
+	write_str ("    pushl ");
+	write_strln (lbl1);
+	write_strln ("    jump");
+	write_str (lbl2);
+	write_strln (":");
+
+	return 1;
 }
 
 int parse_gvar(char* name)
