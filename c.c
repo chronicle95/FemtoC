@@ -35,6 +35,8 @@
  * or        - bitwise operation. two top-most stack values
  *             get replaced with the result
  * swap      - two top-most stack values exchange their places
+ * dup       - duplicate stack head
+ * drop      - remove stack head
  */
 
 
@@ -729,8 +731,10 @@ int parse_conditional()
 		return 0;
 	}
 
-	write_str ("    nzjump ");
+	write_strln ("    dup");
+	write_str ("    pushl ");
 	write_strln (lbl);
+	write_strln ("    nzjump");
 
 	if (!read_sym ('{'))
 	{
@@ -748,8 +752,41 @@ int parse_conditional()
 		}
 	}
 
-	write_str (lbl);
-	write_strln (":");
+	if (read_sym_s ("else"))
+	{
+		write_str (lbl);
+		write_strln (":");
+
+		gen_label (lbl);
+		write_strln ("    not");
+		write_str ("    pushl ");
+		write_strln (lbl);
+		write_strln ("    nzjump");
+
+		if (read_sym ('{'))
+		{
+			while (!read_sym ('}'))
+			{
+				if (!parse_statement ())
+				{
+					return 0;
+				}
+			}
+		}
+		else if (!parse_statement ())
+		{
+			return 0;
+		}
+
+		write_str (lbl);
+		write_strln (":");
+	}
+	else
+	{
+		write_strln ("    drop");
+		write_str (lbl);
+		write_strln (":");
+	}
 
 	return 1;
 }
