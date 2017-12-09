@@ -743,12 +743,14 @@ int parse_conditional()
 			return 0;
 		}
 	}
-
-	while (!read_sym ('}'))
+	else
 	{
-		if (!parse_statement ())
+		while (!read_sym ('}'))
 		{
-			return 0;
+			if (!parse_statement ())
+			{
+				return 0;
+			}
 		}
 	}
 
