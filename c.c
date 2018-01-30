@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <stdio.h>
 
 /* Assembly language brief
@@ -1074,25 +1075,27 @@ int parse_root()
 
 int main()
 {
-	/* TODO: Dummy. Change in future */
 	char source[1024];
 	char result[1024];
 	char locals[1024];
 	char globals[1024];
-	src_p = source;  *src_p = 0;
+
+    src_p = source;  *src_p = 0;
 	out_p = result;  *out_p = 0;
 	loc_p = locals;  *loc_p = 0;
 	gbl_p = globals; *gbl_p = 0;
-	printf ("Enter code:\n");
-	fgets (source, sizeof (source), stdin);
+
+    if (isatty(fileno(stdin)))
+    {
+	    puts ("Enter code (Ctrl-D to end):");
+    }
+    else
+    {
+        puts ("/* Generated with FemtoC */");
+    }
+	fread (source, 1, sizeof (source), stdin);
 	parse_root ();
-	while (src_p != source)
-	{
-		putchar (' ');
-		src_p = src_p - 1;
-	}
-	putchar ('^');
-	printf ("\n----------------------\n");
 	puts (result);
-	return 0; /* SUCCESS */
+
+    return 0; /* SUCCESS */
 }
