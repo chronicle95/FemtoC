@@ -1080,26 +1080,26 @@ int main()
 	char locals[1024];
 	char globals[1024];
 
-    src_p = source;  *src_p = 0;
+	src_p = source;  *src_p = 0;
 	out_p = result;  *out_p = 0;
 	loc_p = locals;  *loc_p = 0;
 	gbl_p = globals; *gbl_p = 0;
 
-    if (isatty(fileno(stdin)))
-    {
-	    puts ("Enter code (Ctrl-D to end):");
-    }
-    else
-    {
-        puts ("/* Generated with FemtoC */");
-    }
+	if (isatty(fileno(stdin)))
+	{
+		puts ("Enter code (Ctrl-D to end):");
+	}
+	else
+	{
+		puts ("/* Generated with FemtoC */");
+	}
 	fread (source, 1, sizeof (source), stdin);
 	parse_root ();
 	puts (result);
-    if (!*src_p)
-    {
-        puts ("/* The end: no errors encountered */");
-    }
+	if (!*src_p)
+	{
+		puts ("/* The end: no errors encountered */");
+	}
 
-    return 0; /* SUCCESS */
+	return 0; /* SUCCESS */
 }
