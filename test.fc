@@ -1,0 +1,23 @@
+/* File made to test language */
+
+int f2(int x)
+{
+    if (x < 7)
+    {
+        return x * 2;
+    }
+    else
+    {
+        return x + 2;
+    }
+}
+
+int f1(int a, int b)
+{
+    return a + b - f2(a);
+}
+
+int main()
+{
+    return 8 * f1(1, 3);
+}
