@@ -1096,6 +1096,10 @@ int main()
 	fread (source, 1, sizeof (source), stdin);
 	parse_root ();
 	puts (result);
+    if (!*src_p)
+    {
+        puts ("/* The end: no errors encountered */");
+    }
 
     return 0; /* SUCCESS */
 }
