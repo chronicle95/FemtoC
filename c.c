@@ -2,6 +2,8 @@
 #include <stdio.h>
 
 /* Assembly language brief
+ * Implements stack machine on a linear
+ * memory cell set.
  *
  * pushsf    - put stack frame absolute address onto head
  *             this address points to return address on stack 
@@ -330,6 +332,18 @@ int unread_sym()
 	return 1;
 }
 
+int read_str_const()
+{
+	while (*src_p && (*src_p != '"'))
+	{
+		write_str (" ");
+		write_num (*src_p);
+		src_p = src_p + 1;
+	}
+	src_p = src_p + 1;
+	return 1;
+}
+
 int read_id(char* dst)
 {
 	char* dp = dst;
@@ -447,6 +461,7 @@ int parse_invoke(char *name)
 int parse_operand()
 {
 	char buf[ID_SZ];
+	char lbl[ID_SZ];
 	int idx = 0;
 	if (read_sym ('!'))
 	{
@@ -502,6 +517,23 @@ int parse_operand()
 		{
 			return read_sym (')');
 		}
+	}
+	else if (read_sym ('"'))
+	{
+		gen_label (buf);
+		gen_label (lbl);
+		write_str ("    jump ");
+		write_strln (buf);
+		write_str (lbl);
+		write_strln (":");
+		write_str ("   .bytes");
+		read_str_const ();
+		write_strln (" 0");
+		write_str (buf);
+		write_strln (":");
+		write_str ("    pushl ");
+		write_strln (lbl);
+		return 1;
 	}
 	else if (read_number (buf))
 	{
