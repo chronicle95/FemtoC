@@ -1065,6 +1065,9 @@ int parse_func(char* name)
 int parse_root()
 {
 	char id[ID_SZ];
+	write_strln ("    jump main");
+	write_strln ("__memp:");
+	write_strln ("    .bytes 0");
 	/* Read identifier as a basis for any
 	 * statement within the program's root. */
 	while (read_id (id))
