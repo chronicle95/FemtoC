@@ -882,7 +882,22 @@ int parse_loop_while()
 
 int parse_gvar(char* name)
 {
-	return 0;
+	char num[ID_SZ];
+	read_space ();
+	if (!read_number (num))
+	{
+		return 0;
+	}
+	if (!read_sym (';'))
+	{
+		return 0;
+	}
+	write_str (name);
+	write_strln (":");
+	write_str ("   .bytes ");
+	write_strln (num);
+	store_var (gbl_p, name);
+	return 1;
 }
 
 int parse_garr(char* name)
@@ -1067,7 +1082,7 @@ int parse_root()
 	char id[ID_SZ];
 	write_strln ("    jump main");
 	write_strln ("__memp:");
-	write_strln ("    .bytes 0");
+	write_strln ("   .bytes 0");
 	/* Read identifier as a basis for any
 	 * statement within the program's root. */
 	while (read_id (id))
