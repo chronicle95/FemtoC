@@ -538,6 +538,14 @@ int parse_operand()
 		write_strln (lbl);
 		return 1;
 	}
+	else if (read_sym (39))
+	{
+		write_str ("    push ");
+		write_numln (*src_p);
+		src_p = src_p + 1;
+		read_sym (39);
+		return 1;
+	}
 	else if (read_number (buf))
 	{
 		write_str ("    push ");
@@ -588,7 +596,6 @@ int parse_operand()
 
 int parse_expr()
 {
-	char buf[ID_SZ];
 	if (!parse_operand ())
 	{
 		return 0;
