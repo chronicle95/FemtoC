@@ -910,6 +910,7 @@ int parse_garr(char* name)
 
 int parse_statement()
 {
+	int idx = 0;
 	char id[ID_SZ];
 
 	/* Allow for empty statement */
@@ -998,10 +999,26 @@ int parse_statement()
 		{
 			return 0;
 		}
-		/* TODO Assignment */
-		write_str ("    ; Store to `");
-		write_str (id);
-		write_strln ("` variable");
+		if (find_var (loc_p, id, &idx))
+		{
+			write_strln ("    pushsf");
+			write_str ("    push ");
+			write_numln (idx);
+			write_strln ("    add");
+		}
+		else if (find_var (gbl_p, id, &idx))
+		{
+			write_str ("    pushl ");
+			write_strln (id);
+		}
+		else
+		{
+			/* TODO local variable decl/def */
+			return 0;
+		}
+		write_strln ("    swap");
+		write_strln ("    popi");
+		goto semicolon_end;
 	}
 
 	/* Label */
