@@ -11,6 +11,9 @@
  * pushl <l> - put label address on stack
  * pushi     - pop stack head as address
  *             and push value at this address
+ * popi      - pop (stack-0) as value
+ *             pop (stack-1) as address
+ *             write value to cell at address
  * not       - logically invert stack head
  * inv       - bitwise inversion of stack head
  * add       - pop two topmost stack values
@@ -905,7 +908,7 @@ int parse_garr(char* name)
 	return 0;
 }
 
-int parse_statement ()
+int parse_statement()
 {
 	char id[ID_SZ];
 
@@ -913,6 +916,24 @@ int parse_statement ()
 	if (read_sym (';'))
 	{
 		return 1;
+	}
+	else if (read_sym ('*'))
+	{
+
+		if (!parse_operand ())
+		{
+			return 0;
+		}
+		if (!read_sym ('='))
+		{
+			return 0;
+		}
+		if (!parse_expr ())
+		{
+			return 0;
+		}
+		write_strln ("    popi");
+		goto semicolon_end;
 	}
 
 	/*
