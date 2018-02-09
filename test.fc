@@ -1,10 +1,13 @@
 /* File made to test language */
 
+char C = 33;
+int q = 0;
+
 int f2(int x)
 {
     if (x < 7)
     {
-        return x * 2;
+        return x * 2 + q;
     }
     else
     {
@@ -19,5 +22,11 @@ int f1(int a, int b)
 
 int main()
 {
-    return 8 * f1(1, 3);
+    C = C + 5;
+    while (C > 0)
+    {
+        q = *&q + 3;
+        C = C - 1;
+    }
+    return 8 * f1(1, q);
 }
