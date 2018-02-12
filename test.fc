@@ -1,4 +1,4 @@
-/* File made to test language */
+/* File made to test the compiler */
 
 char C = 33;
 int q = 0;
