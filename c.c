@@ -5,6 +5,26 @@
  * Implements stack machine on a linear
  * memory cell set.
  *
+ * Memory model:
+ *
+ * +------+
+ * | ArgN |
+ *   ....
+ * | Arg2 |
+ * +------+
+ * | Arg1 | <= function arguments
+ * +------+
+ * | Ret  | <= stack frame (holds return address)
+ * +------+
+ * | Loc1 | <= local variables
+ * +------+
+ * | Loc2 |
+ *   ....
+ * | LocN |
+ * +------+
+ *
+ * Instruction set:
+ *
  * pushsf    - put stack frame absolute address onto head
  *             this address points to return address on stack 
  * push <n>  - put constant on stack
