@@ -42,6 +42,11 @@
  * swap      - two top-most stack values exchange their places
  * dup       - duplicate stack head
  * drop      - remove stack head
+ *
+ * Preprocessor directives:
+ *  .byte ... - a set of constant bytes
+ *  .addr <l> - label location as byte
+ *  .zero <n> - sequence of N zeroes
  */
 
 
@@ -529,7 +534,7 @@ int parse_operand()
 		write_strln (buf);
 		write_str (lbl);
 		write_strln (":");
-		write_str ("   .bytes");
+		write_str ("   .byte");
 		read_str_const ();
 		write_strln (" 0");
 		write_str (buf);
@@ -904,7 +909,7 @@ int parse_gvar(char* name)
 	}
 	write_str (name);
 	write_strln (":");
-	write_str ("   .bytes ");
+	write_str ("   .byte ");
 	write_strln (num);
 	store_var (gbl_p, name);
 	return 1;
@@ -912,7 +917,31 @@ int parse_gvar(char* name)
 
 int parse_garr(char* name)
 {
-	return 0;
+	char num[ID_SZ];
+	char lbl[ID_SZ];
+	gen_label (lbl);
+	if (!read_number (num))
+	{
+		return 0;
+	}
+	if (!read_sym (']'))
+	{
+		return 0;
+	}
+	if (!read_sym (';'))
+	{
+		return 0;
+	}
+	write_str (name);
+	write_strln (":");
+	write_str ("   .addr ");
+	write_strln (lbl);
+	write_str (lbl);
+	write_strln (":");
+	write_str ("   .zero ");
+	write_strln (num);
+	store_var (gbl_p, name);
+	return 1;
 }
 
 int parse_statement()
@@ -927,7 +956,6 @@ int parse_statement()
 	}
 	else if (read_sym ('*'))
 	{
-
 		if (!parse_operand ())
 		{
 			return 0;
@@ -1127,7 +1155,7 @@ int parse_root()
 	char id[ID_SZ];
 	write_strln ("    jump main");
 	write_strln ("__memp:");
-	write_strln ("   .bytes 0");
+	write_strln ("   .byte 0");
 	/* Read identifier as a basis for any
 	 * statement within the program's root. */
 	while (read_id (id))
