@@ -970,6 +970,7 @@ int parse_statement()
 {
 	int idx = 0;
 	char id[ID_SZ];
+	char num[ID_SZ];
 
 	/* Allow for empty statement */
 	if (read_sym (';'))
@@ -1085,6 +1086,31 @@ int parse_statement()
 		write_str (id);
 		write_strln (":");
 		return 1;
+	}
+
+	/* Local array definition */
+	else if (read_sym ('['))
+	{
+		if (!parse_expr ())
+		{
+			return 0;
+		}
+		if (!read_sym (']'))
+		{
+			return 0;
+		}
+		write_strln ("    pushl __memp");
+		write_strln ("    pushi");
+		write_strln ("    dup");
+		/* TODO define local variable */
+		write_strln ("    swap");
+		write_strln ("    popi");
+		write_strln ("    add");
+		write_strln ("    pushl __memp");
+		write_strln ("    swap");
+		write_strln ("    popi");
+
+		goto semicolon_end;
 	}
 
 	else
