@@ -3,6 +3,17 @@
 char C = 33;
 int q = 0;
 
+int copy(char *d, char *s, int n)
+{
+    while (n > 0)
+    {
+        *d = *s;
+        d = d + 1;
+        s = s + 1;
+        n = n - 1;
+    }
+}
+
 int f2(int x)
 {
     char arr[10];
@@ -25,6 +36,7 @@ int f1(int a, int b)
 int main()
 {
     C = C + 5;
+    copy (&q, &C, 1);
     while (C > 0)
     {
         q = *&q + 3;
