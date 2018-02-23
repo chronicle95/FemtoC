@@ -92,8 +92,7 @@ int lbl_cnt = 0; /* Label counter. Used for temporary labels */
 
 int gen_label(char *dst)
 {
-	int n;
-	n = lbl_cnt;
+	int n = lbl_cnt;
 	*dst = '_';
 	dst = dst + 1;
 	*dst = 'L';
