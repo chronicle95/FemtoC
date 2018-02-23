@@ -311,6 +311,16 @@ int read_space()
 		{
 			src_p = src_p + 1;
 		}
+		/* Ignore preprocessor
+		 * TBD: implement include
+		 */
+		else if (*src_p == '#')
+		{
+			while (*src_p && (*src_p != 10))
+			{
+				src_p = src_p + 1;
+			}
+		}
 		else
 		{
 			break;
