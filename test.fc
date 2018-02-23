@@ -5,9 +5,11 @@ int q = 0;
 
 int f2(int x)
 {
+    char arr[10];
+    int j = 0;
     if (x < 7)
     {
-        return x * 2 + q;
+        return x * 2 + q - j;
     }
     else
     {

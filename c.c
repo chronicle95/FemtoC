@@ -144,7 +144,7 @@ int strcomp(char* a, char* b)
 	return 1;
 }
 
-int write_chr (char c)
+int write_chr(char c)
 {
 	*out_p = c;
 	out_p = out_p + 1;
@@ -152,7 +152,7 @@ int write_chr (char c)
 	return 1;
 }
 
-int write_str (char *s)
+int write_str(char *s)
 {
 	while (*s)
 	{
@@ -162,14 +162,20 @@ int write_str (char *s)
 	return 1;
 }
 
-int write_strln (char *s)
+int write_strln(char *s)
 {
 	write_str (s);
 	write_chr (10);
 	return 1;
 }
 
-int write_num (int n)
+int error_log(char *s)
+{
+	write_str (";; [ERROR]: ");
+	write_strln (s);
+}
+
+int write_num(int n)
 {
 	char buf[10];
 	int i = 0;
@@ -198,7 +204,7 @@ int write_num (int n)
 	return 1;
 }
 
-int write_numln (int n)
+int write_numln(int n)
 {
 	write_num (n);
 	write_chr (10);
@@ -1029,6 +1035,7 @@ int parse_statement()
 	{
 		if (!read_id (id))
 		{
+			error_log ("label expected");
 			return 0;
 		}
 		write_str ("    pushl __");
@@ -1040,6 +1047,7 @@ int parse_statement()
 	/* Otherwise check for identifier */
 	else if (!read_id (id))
 	{
+		error_log ("identifier expected");
 		return 0;
 	}
 
@@ -1071,8 +1079,12 @@ int parse_statement()
 		}
 		else
 		{
-			/* TODO local variable decl/def */
-			return 0;
+			store_var (loc_p, id);
+			find_var (loc_p, id, &idx);
+			write_strln ("    pushsf");
+			write_str ("    push ");
+			write_numln (idx);
+			write_strln ("    add");
 		}
 		write_strln ("    swap");
 		write_strln ("    popi");
@@ -1102,7 +1114,14 @@ int parse_statement()
 		write_strln ("    pushl __memp");
 		write_strln ("    pushi");
 		write_strln ("    dup");
-		/* TODO define local variable */
+
+		store_var (loc_p, id);
+		find_var (loc_p, id, &idx);
+		write_strln ("    pushsf");
+		write_str ("    push ");
+		write_numln (idx);
+		write_strln ("    add");
+
 		write_strln ("    swap");
 		write_strln ("    popi");
 		write_strln ("    add");
@@ -1115,6 +1134,7 @@ int parse_statement()
 
 	else
 	{
+		error_log ("bad statement");
 		return 0;
 	}
 
