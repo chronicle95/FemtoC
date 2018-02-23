@@ -90,6 +90,16 @@ int lbl_cnt = 0; /* Label counter. Used for temporary labels */
 
 /* Utility functions */
 
+int clear_memory(char *p, int size)
+{
+	while (size > 0)
+	{
+		*p = 0;
+		p = p + 1;
+		size = size - 1;
+	}
+}
+
 int gen_label(char *dst)
 {
 	int n = lbl_cnt;
@@ -595,7 +605,12 @@ int parse_operand()
 	{
 		if (read_sym ('('))
 		{
-			return parse_invoke (buf);
+			if (!parse_invoke (buf))
+			{
+				return 0;
+			}
+			write_strln ("    pushl __retval");
+			write_strln ("    pushi");
 		}
 		else
 		{
@@ -1010,6 +1025,9 @@ int parse_statement()
 		{
 			return 0;
 		}
+		write_strln ("    pushl __retval");
+		write_strln ("    swap");
+		write_strln ("    popi");
 		write_strln ("    ret");
 		goto semicolon_end;
 	}
@@ -1222,6 +1240,8 @@ int parse_root()
 {
 	char id[ID_SZ];
 	write_strln ("    jump main");
+	write_strln ("__retval:");
+	write_strln ("   .byte 0");
 	write_strln ("__memp:");
 	write_strln ("   .byte 0");
 	/* Read identifier as a basis for any
@@ -1266,10 +1286,15 @@ int parse_root()
 
 int main()
 {
-	char source[1024];
-	char result[1024];
+	char source[4096];
+	char result[4096];
 	char locals[1024];
 	char globals[1024];
+
+	clear_memory (source, 4096);
+	clear_memory (result, 4096);
+	clear_memory (locals, 1024);
+	clear_memory (globals, 1024);
 
 	src_p = source;  *src_p = 0;
 	out_p = result;  *out_p = 0;
