@@ -65,7 +65,6 @@
  *
  * Preprocessor directives:
  *  .byte ... - a set of constant bytes
- *  .addr <l> - label location as byte
  *  .zero <n> - sequence of N zeroes
  */
 
@@ -938,8 +937,6 @@ int parse_gvar(char* name)
 int parse_garr(char* name)
 {
 	char num[ID_SZ];
-	char lbl[ID_SZ];
-	gen_label (lbl);
 	if (!read_number (num))
 	{
 		return 0;
@@ -953,10 +950,6 @@ int parse_garr(char* name)
 		return 0;
 	}
 	write_str (name);
-	write_strln (":");
-	write_str ("   .addr ");
-	write_strln (lbl);
-	write_str (lbl);
 	write_strln (":");
 	write_str ("   .zero ");
 	write_strln (num);
