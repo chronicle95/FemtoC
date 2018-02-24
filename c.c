@@ -288,7 +288,7 @@ int find_var(char *ptr, char *s, int *i)
 int is_space(char c)
 {
 	return ((c == ' ') || (c == 10)
-			|| (c == 13)  || (c == 8));
+			|| (c == 13)  || (c == 9));
 }
 
 int is_digit(char c)
