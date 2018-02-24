@@ -259,6 +259,10 @@ int find_var(char *ptr, char *s, int *i)
 		else
 		{
 			sp = s;
+			while (*fp != ' ')
+			{
+				fp = fp + 1;
+			}
 		}
 
 		if (*sp == 0)
