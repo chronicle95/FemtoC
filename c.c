@@ -1168,7 +1168,7 @@ semicolon_end:
 	return 1;
 }
 
-int parse_argslist ()
+int parse_argslist()
 {
 	char id[ID_SZ];
 
@@ -1181,10 +1181,13 @@ int parse_argslist ()
 				unread_sym ();
 				return 1;
 			}
+			error_log ("arguments list not closed");
 			return 0;
 		}
 
 		store_var (loc_p, id);
+		/* TODO: write number from stack
+		 * to local variable (pop) */
 
 		if (!read_sym (','))
 		{
