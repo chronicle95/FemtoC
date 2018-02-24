@@ -1,12 +1,12 @@
 ## FemtoC
 
-An attempt at making a C compiler.
+An attempt at making a C compiler just for fun.
 
 It is restricted in many ways and is still work in progress.
 
 ### Build
 
-`$ gcc c.c -o cc`
+`$ make`
 
 ### Run
 
@@ -14,6 +14,6 @@ Manual mode:
 
 `$ ./cc`
 
-You can pipeline the source into the compiler:
+Pipeline the source into the compiler:
 
 `$ cat <filename> | ./cc`
