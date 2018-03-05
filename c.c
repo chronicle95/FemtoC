@@ -69,7 +69,11 @@
 
 
 /* Global variables */
-char ID_SZ = 20;
+int ID_SZ = 20;
+int SRC_SZ = 4096;
+int OUT_SZ = 4096;
+int LOC_SZ = 1024;
+int GBL_SZ = 1024;
 
 char* src_p = 0; /* source code pointer
 		    points to current location */
@@ -1292,15 +1296,15 @@ int parse_root()
 
 int main()
 {
-	char source[4096];
-	char result[4096];
-	char locals[1024];
-	char globals[1024];
+	char source[SRC_SZ];
+	char result[OUT_SZ];
+	char locals[LOC_SZ];
+	char globals[GBL_SZ];
 
-	clear_memory (source, 4096);
-	clear_memory (result, 4096);
-	clear_memory (locals, 1024);
-	clear_memory (globals, 1024);
+	clear_memory (source, SRC_SZ);
+	clear_memory (result, OUT_SZ);
+	clear_memory (locals, LOC_SZ);
+	clear_memory (globals, GBL_SZ);
 
 	src_p = source;  *src_p = 0;
 	out_p = result;  *out_p = 0;
@@ -1318,7 +1322,7 @@ int main()
 			goto lp_brk;
 		}
 		src_p = src_p + 1;
-		if ((src_p - source) == 4096)
+		if ((src_p - source) == SRC_SZ)
 		{
 			puts (";; Overflow!!");
 			goto lp_brk;
