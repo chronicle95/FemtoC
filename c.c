@@ -1,4 +1,3 @@
-#include <unistd.h>
 #include <stdio.h>
 
 /* Assembly language brief
@@ -1308,20 +1307,38 @@ int main()
 	loc_p = locals;  *loc_p = 0;
 	gbl_p = globals; *gbl_p = 0;
 
-	if (isatty(fileno(stdin)))
+	while (1)
 	{
-		puts ("Enter code (Ctrl-D to end):");
+		/* Read by character */
+		*src_p = getchar ();
+
+		/* Stop at EOF or overflow */
+		if (*src_p == -1)
+		{
+			goto lp_brk;
+		}
+		src_p = src_p + 1;
+		if ((src_p - source) == 4096)
+		{
+			puts (";; Overflow!!");
+			goto lp_brk;
+		}
 	}
-	else
-	{
-		puts (";; Generated with FemtoC");
-	}
-	fread (source, 1, sizeof (source), stdin);
+lp_brk:
+	*src_p = 0;
+	src_p = source;
+
 	parse_root ();
+
+	puts (";; Generated with FemtoC");
 	puts (result);
 	if (!*src_p)
 	{
 		puts (";; The end: no errors encountered");
+	}
+	else
+	{
+		puts (";; Error(s) found!");
 	}
 
 	return 0; /* SUCCESS */

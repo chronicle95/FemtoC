@@ -10,10 +10,8 @@ It is restricted in many ways and is still work in progress.
 
 ### Run
 
-Manual mode:
-
-`$ ./cc`
-
 Pipeline the source into the compiler:
 
 `$ cat <filename> | ./cc`
+
+It expects the program on `stdin` and produces assembly code to `stdout`.
