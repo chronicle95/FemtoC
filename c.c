@@ -70,8 +70,8 @@
 
 /* Global variables */
 int ID_SZ = 20;
-int SRC_SZ = 4096;
-int OUT_SZ = 4096;
+int SRC_SZ = 8096;
+int OUT_SZ = 8096;
 int LOC_SZ = 1024;
 int GBL_SZ = 1024;
 
