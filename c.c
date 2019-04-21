@@ -69,11 +69,11 @@
 
 
 /* Global variables */
-int ID_SZ = 20;
-int SRC_SZ = 8096;
-int OUT_SZ = 8096;
-int LOC_SZ = 1024;
-int GBL_SZ = 1024;
+int ID_SZ = 24;
+int SRC_SZ = 32000;
+int OUT_SZ = 32000;
+int LOC_SZ = 16000;
+int GBL_SZ = 16000;
 
 char* src_p = 0; /* source code pointer
 		    points to current location */
