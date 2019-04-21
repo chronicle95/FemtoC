@@ -1317,7 +1317,7 @@ int main()
 		*src_p = getchar ();
 
 		/* Stop at EOF or overflow */
-		if (*src_p == -1)
+		if (*src_p == 255)
 		{
 			goto lp_brk;
 		}
