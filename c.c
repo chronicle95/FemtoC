@@ -1219,6 +1219,13 @@ int parse_func(char* name)
 		return 0;
 	}
 
+	/* Allow for declarations */
+
+	if (read_sym (';'))
+	{
+		return 1;
+	}
+
 	/* Statements */
 
 	if (!read_sym ('{'))
