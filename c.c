@@ -1018,7 +1018,7 @@ int parse_statement()
 		{
 			return 0;
 		}
-		// brace or semicolon
+		/* brace or semicolon */
 		return 1;
 	}
 	else if (read_sym_s ("while"))
@@ -1027,7 +1027,7 @@ int parse_statement()
 		{
 			return 0;
 		}
-		// brace or semicolon
+		/* brace or semicolon */
 		return 1;
 	}
 	else if (read_sym_s ("goto"))
@@ -1320,16 +1320,15 @@ int main()
 		/* Stop at EOF or overflow */
 		if (*src_p == 255)
 		{
-			goto lp_brk;
+			break;
 		}
 		src_p = src_p + 1;
 		if ((src_p - source) == SRC_SZ)
 		{
 			puts (";; Overflow!!");
-			goto lp_brk;
+			break;
 		}
 	}
-lp_brk:
 	*src_p = 0;
 	src_p = source;
 
