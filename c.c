@@ -89,7 +89,9 @@ char* gbl_p = 0; /* global variable list.
 		    record goes as follow:
 
 		    var0 var1 ... */
-int lbl_cnt = 0; /* Label counter. Used for temporary labels */
+int lbl_cnt = 0;   /* Label counter. Used for temporary labels */
+char* lbl_sta = 0; /* Nearest loop start label */
+char* lbl_end = 0; /* Nearest loop end label */
 
 /* Utility functions */
 
@@ -364,11 +366,10 @@ int read_sym(char exp)
 
 int read_sym_s(char *exp_s)
 {
-	int count;
+	int count = 0;
 
 	read_space ();
 
-	count = 0;
 	while (*exp_s && (*src_p == *exp_s))
 	{
 		src_p = src_p + 1;
@@ -441,48 +442,6 @@ int read_number(char* dst)
 	}
 	while (is_digit (*src_p))
 	{
-		*dst = *src_p;
-		dst = dst + 1;
-		src_p = src_p + 1;
-	}
-	*dst = 0;
-	return 1;
-}
-
-int read_cstr(char* dst)
-{
-	if (!read_sym ('\"'))
-	{
-		return 0;
-	}
-	src_p = src_p + 1;
-	while (*src_p != '\"')
-	{
-		if (*src_p == '\\')
-		{
-			src_p = src_p + 1;
-		}
-		*dst = *src_p;
-		dst = dst + 1;
-		src_p = src_p + 1;
-	}
-	*dst = 0;
-	return 1;
-}
-
-int read_csym(char* dst)
-{
-	if (!read_sym ('\''))
-	{
-		return 0;
-	}
-	src_p = src_p + 1;
-	while (*src_p != '\'')
-	{
-		if (*src_p == '\\')
-		{
-			src_p = src_p + 1;
-		}
 		*dst = *src_p;
 		dst = dst + 1;
 		src_p = src_p + 1;
@@ -599,7 +558,10 @@ int parse_operand()
 		write_str ("    push ");
 		write_numln (*src_p);
 		src_p = src_p + 1;
-		read_sym (39);
+		if (!read_sym (39))
+		{
+			return 0;
+		}
 		return 1;
 	}
 	else if (read_number (buf))
@@ -639,8 +601,8 @@ int parse_operand()
 			{
 				return 0;
 			}
-			return 1;
 		}
+		return 1;
 	}
 	else if (read_sym ('-'))
 	{
@@ -900,9 +862,17 @@ int parse_loop_while()
 {
 	char lbl1[ID_SZ];
 	char lbl2[ID_SZ];
+	char *tmp_sta = 0;
+	char *tmp_end = 0;
 
 	gen_label (lbl1);
 	gen_label (lbl2);
+
+	/* Remember parent loop labels if any */
+	tmp_sta = lbl_sta;
+	tmp_end = lbl_end;
+	lbl_sta = lbl1;
+	lbl_end = lbl2;
 
 	if (!read_sym ('('))
 	{
@@ -947,6 +917,10 @@ int parse_loop_while()
 	write_strln ("    jump");
 	write_str (lbl2);
 	write_strln (":");
+
+	/* Restore parent loop break label */
+	lbl_sta = tmp_sta;
+	lbl_end = tmp_end;
 
 	return 1;
 }
@@ -1066,6 +1040,26 @@ int parse_statement()
 		write_str ("    pushl __");
 		write_strln (id);
 		write_strln ("    jump");
+		goto semicolon_end;
+	}
+	else if (read_sym_s ("break"))
+	{
+		if (lbl_end)
+		{
+			write_str ("    pushl ");
+			write_strln (lbl_end);
+			write_strln ("    jump");
+		}
+		goto semicolon_end;
+	}
+	else if (read_sym_s ("continue"))
+	{
+		if (lbl_sta)
+		{
+			write_str ("    pushl ");
+			write_strln (lbl_sta);
+			write_strln ("    jump");
+		}
 		goto semicolon_end;
 	}
 
