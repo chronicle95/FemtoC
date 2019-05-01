@@ -71,7 +71,7 @@
 /* Global variables */
 int ID_SZ = 24;
 int SRC_SZ = 32000;
-int OUT_SZ = 32000;
+int OUT_SZ = 65000;
 int LOC_SZ = 16000;
 int GBL_SZ = 16000;
 
