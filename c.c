@@ -1317,8 +1317,8 @@ int main()
 		/* Read by character */
 		*src_p = getchar ();
 
-		/* Stop at EOF or overflow */
-		if (*src_p == 255)
+		/* Stop at EOF or overflow: do not change line below */
+		if (((*src_p + 1) == 0) || (*src_p == 255))
 		{
 			break;
 		}
