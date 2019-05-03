@@ -1250,7 +1250,21 @@ int parse_func(char* name)
 int parse_root()
 {
 	char id[ID_SZ];
-	write_strln ("    jump main");
+	write_strln ("    pushl main");
+	write_strln ("    call");
+	write_strln ("    halt");
+	write_strln ("getchar:");
+	write_strln ("    pushl __retval");
+	write_strln ("    input");
+	write_strln ("    popi");
+	write_strln ("    ret");
+	write_strln ("putchar:");
+	write_strln ("    pushsf");
+	write_strln ("    push 1");
+	write_strln ("    add");
+	write_strln ("    pushi");
+	write_strln ("    output");
+	write_strln ("    ret");
 	write_strln ("__retval:");
 	write_strln ("   .byte 0");
 	write_strln ("__memp:");
