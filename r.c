@@ -92,18 +92,53 @@ int assemble_file(const char *file_name, TYPE *buf)
 		/* read preprocessor */
 		if (c == '.')
 		{
-			/* TODO */
+			for (tmp_idx = 0, c = fgetc(f); IS_ALLOWED(c); tmp[tmp_idx++] = c, c = fgetc(f));
+			tmp[tmp_idx] = 0;
+			if (!strcmp (tmp, "byte"))
+			{
+				while (c != '\n')
+				{
+					IGN_WHITESPACE(f);
+					if (IS_NUMBER (c))
+					{
+						for (tmp_idx = 0; IS_NUMBER(c); tmp[tmp_idx++] = c, c = fgetc(f));
+						tmp[tmp_idx] = 0;
+						buf[buf_idx++] = atoi (tmp);
+					}
+					else
+					{
+						puts ("error: number expected");
+						return 0;
+					}
+				}
+			}
+			else if (!strcmp (tmp, "zero"))
+			{
+				int i;
+				IGN_WHITESPACE(f);
+				if (IS_NUMBER (c))
+				{
+					for (tmp_idx = 0; IS_NUMBER (c); tmp[tmp_idx++] = c, c = fgetc(f));
+					tmp[tmp_idx] = 0;
+					i = atoi (tmp);
+					while (i > 0)
+					{
+						buf[buf_idx++] = 0;
+						i--;
+					}
+				}
+				else
+				{
+					puts ("error: number expected");
+					return 0;
+				}
+			}
 			continue;
 		}
 		else if (IS_ALLOWED(c))
 		{
-			tmp_idx = 0;
 			/* read opcode or label */
-			while (IS_ALLOWED(c))
-			{
-				tmp[tmp_idx++] = c;
-				c = fgetc(f);
-			}
+			for (tmp_idx = 0; IS_ALLOWED(c); tmp[tmp_idx++] = c, c = fgetc(f));
 			tmp[tmp_idx] = 0;
 		}
 

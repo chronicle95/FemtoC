@@ -540,8 +540,9 @@ int parse_operand()
 	{
 		gen_label (buf);
 		gen_label (lbl);
-		write_str ("    jump ");
+		write_str ("    pushl ");
 		write_strln (buf);
+		write_strln ("    jump");
 		write_str (lbl);
 		write_strln (":");
 		write_str ("   .byte");
