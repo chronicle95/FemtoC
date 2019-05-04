@@ -10,8 +10,10 @@ It is restricted in many ways and is still work in progress.
 
 ### Run
 
-Pipeline the source into the compiler:
-
-`$ cat <filename> | ./cc`
-
 It expects the program on `stdin` and produces assembly code to `stdout`.
+
+So to compile a program you can do pipelining:
+`$ cat hw.fc | ./cc > hw.s`
+
+And to execute the assembly, use the supplied runtime:
+`$ ./rr hw.s`

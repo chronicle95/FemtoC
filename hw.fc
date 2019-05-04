@@ -1,0 +1,14 @@
+int puts (char *s)
+{
+	while (*s)
+	{
+		putchar (*s);
+		s = s + 1;
+	}
+	putchar (10);
+}
+
+int main()
+{
+	puts ("Hello, World!");
+}
