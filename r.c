@@ -2,12 +2,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+char debug_mode = 0;
 
 typedef unsigned short TYPE;
 
-#define BUF_SZ  65535 
-#define ID_SZ   24
-#define LBL_CNT 1000
+#define BUF_SZ	65535 
+#define SF_SZ	64
+#define ID_SZ	24
+#define LBL_CNT	1000
 
 #define OP_NOP    0
 #define OP_PUSHL  1
@@ -52,7 +56,7 @@ void show_info()
 {
 	puts ("Development runtime for FemtoC");
 	puts ("Usage:");
-	puts ("./rr <file>");
+	puts ("./rr [--debug] <file>");
 }
 
 int assemble_file(const char *file_name, TYPE *buf)
@@ -64,6 +68,11 @@ int assemble_file(const char *file_name, TYPE *buf)
 	int tmp_idx = 0;
 	char c;
 	FILE *f = fopen(file_name, "r");
+
+	if (debug_mode)
+	{
+		puts ("Assembling...");
+	}
 
 	if (!f)
 	{
@@ -95,6 +104,7 @@ int assemble_file(const char *file_name, TYPE *buf)
 				tmp[tmp_idx++] = c;
 				c = fgetc(f);
 			}
+			tmp[tmp_idx] = 0;
 		}
 
 		if (c == ':' && tmp_idx != 0)
@@ -154,6 +164,7 @@ int assemble_file(const char *file_name, TYPE *buf)
 					return 0;
 				}
 				for (i = 0; IS_ALLOWED (c); tmp[i++] = c, c = fgetc(f));
+				tmp[i] = 0;
 				for (i = 0; i < lbl_idx; i++)
 				{
 					if (!strcmp (l[i].text, tmp)) break;
@@ -176,6 +187,7 @@ int assemble_file(const char *file_name, TYPE *buf)
 			{
 				IGN_WHITESPACE (f);
 				for (tmp_idx = 0; IS_NUMBER (c); tmp[tmp_idx++] = c, c = fgetc(f));
+				tmp[tmp_idx] = 0;
 				buf[buf_idx++] = OP_PUSH;
 				buf[buf_idx++] = atoi (tmp);
 			}
@@ -211,53 +223,82 @@ int assemble_file(const char *file_name, TYPE *buf)
 
 void execute_binary(TYPE *m)
 {
-	TYPE sh = BUF_SZ - 1;
+	TYPE sf[SF_SZ];
+	TYPE sfh = SF_SZ;
+	TYPE sh = BUF_SZ;
 	TYPE cp = 0;
+
+	if (debug_mode)
+	{
+		puts ("Executing binary...");
+	}
 
 	for (;; cp++)
 	{
+		if (debug_mode)
+		{
+			printf ("@%06d OP_%-4d ", cp, m[cp]);
+		}
+#define NEED_STACK(must_have) do {\
+			if (debug_mode && ((BUF_SZ - sh) < must_have)) {\
+				puts ("\nRuntime error: stack underflow");\
+				return;\
+			} } while(0)
+
 		switch (m[cp])
 		{
 			case OP_NOP:
 				/* do nothing */
 				break;
-			case OP_ADD:
+			case OP_ADD: NEED_STACK(2);
 				m[sh + 1] += m[sh];
 				sh++;
 				break;
-			case OP_SUB:
+			case OP_SUB: NEED_STACK(2);
 				m[sh + 1] -= m[sh];
 				sh++;
 				break;
-			case OP_MUL:
+			case OP_MUL: NEED_STACK(2);
 				m[sh + 1] *= m[sh];
 				sh++;
 				break;
-			case OP_DIV:
+			case OP_DIV: NEED_STACK(2);
 				m[sh + 1] /= m[sh];
 				sh++;
 				break;
-			case OP_MOD:
+			case OP_MOD: NEED_STACK(2);
 				m[sh + 1] %= m[sh];
 				sh++;
 				break;
-			case OP_INV:
+			case OP_INV: NEED_STACK(1);
 				m[sh] = ~m[sh];
 				break;
-			case OP_NOT:
+			case OP_NOT: NEED_STACK(1);
 				m[sh] = !m[sh];
 				break;
-			case OP_DUP:
+			case OP_DUP: NEED_STACK(1);
 				sh--;
 				m[sh] = m[sh + 1];
 				break;
-			case OP_DROP:
+			case OP_DROP: NEED_STACK(1);
 				sh++;
 				break;
-			case OP_PUSHI:
+			case OP_SWAP: NEED_STACK(2);
+				m[sh] ^= m[sh + 1];
+				m[sh + 1] ^= m[sh];
+				m[sh] ^= m[sh + 1];
+				break;
+			case OP_PUSHI: NEED_STACK(1);
 				m[sh] = m[m[sh]];
 				break;
-			case OP_POPI:
+			case OP_PUSHSF:
+				if (sfh != SF_SZ)
+				{
+					sh--;
+					m[sh] = sf[sfh];
+				}
+				break;
+			case OP_POPI: NEED_STACK(2);
 				m[m[sh + 1]] = m[sh];
 				sh += 2;
 				break;
@@ -265,8 +306,12 @@ void execute_binary(TYPE *m)
 				sh--;
 				cp++;
 				m[sh] = m[cp];
+				if (debug_mode)
+				{
+					printf (" Argument: %4d", m[cp]);
+				}
 				break;
-			case OP_NZJUMP:
+			case OP_NZJUMP: NEED_STACK(2);
 				if (m[sh + 1])
 				{
 					m[sh + 1] = m[sh];
@@ -278,27 +323,63 @@ void execute_binary(TYPE *m)
 					break;
 				}
 				/* fall through */
-			case OP_JUMP:
-				cp = m[sh];
+			case OP_JUMP: NEED_STACK(1); 
+				cp = m[sh] - 1;
 				sh++;
 				break;
-			case OP_CMPEQ:
+			case OP_CMPEQ: NEED_STACK(2);
 				m[sh + 1] = (m[sh] == m[sh + 1]);
 				sh++;
 				break;
-			case OP_CMPNE:
+			case OP_CMPNE: NEED_STACK(2);
 				m[sh + 1] = (m[sh] != m[sh + 1]);
 				sh++;
 				break;
 			case OP_INPUT:
 				sh--;
-				m[sh] = getchar ();
+				if (debug_mode)
+				{
+					printf (" Inp.(int): ");
+					scanf ("%d", &m[sh]);
+				}
+				else
+				{
+					m[sh] = getchar ();
+				}
 				break;
-			case OP_OUTPUT:
-				putchar ((char) m[sh]);
+			case OP_OUTPUT: NEED_STACK(1);
+				if (debug_mode)
+				{
+					printf (" Output  : %4d", m[sh]);
+				}
+				else
+				{
+					putchar ((char) m[sh]);
+				}
 				sh++;
+				break;
+			case OP_CALL: NEED_STACK(1);
+				cp ^= m[sh];
+				m[sh] ^= cp;
+				cp ^= m[sh];
+				sf[--sfh] = sh;
+				cp--;
+				break;
+			case OP_RET: NEED_STACK(1);
+				if (sfh != SF_SZ)
+				{
+					sh = sf[sfh++];
+					cp = m[sh++];
+				}
+				break;
 			case OP_HALT:
 				return;
+		}
+#undef STACK
+		if (debug_mode)
+		{
+			printf ("\n");
+			usleep(100000);
 		}
 	}
 }
@@ -316,11 +397,21 @@ void execute_file(const char *file_name)
 
 int main(int argc, char **argv)
 {
-	if (argc != 2)
+	if (argc < 2)
 	{
-		show_info ();
-		return 1;
+		goto info_exit;
 	}
-	execute_file (argv[1]);
+	if (!strcmp (argv[1], "--debug"))
+	{
+		debug_mode = 1;
+	}
+	execute_file (argv[1 + debug_mode]);
+	if (debug_mode)
+	{
+		puts ("\nDone!");
+	}
 	return 0;
+info_exit:
+	show_info();
+	return 1;
 }
