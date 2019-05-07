@@ -32,11 +32,17 @@ typedef unsigned short TYPE;
 #define OP_NZJUMP 16
 #define OP_CMPEQ  17
 #define OP_CMPNE  18
-#define OP_DUP    19
-#define OP_DROP   20
-#define OP_SWAP   21
-#define OP_INPUT  22
-#define OP_OUTPUT 23
+#define OP_CMPGT  19
+#define OP_CMPGE  20
+#define OP_CMPLT  21
+#define OP_CMPLE  22
+#define OP_AND    23
+#define OP_OR     24
+#define OP_DUP    25
+#define OP_DROP   26
+#define OP_SWAP   27
+#define OP_INPUT  28
+#define OP_OUTPUT 29
 #define OP_HALT   255
 
 #define IGN_WHITESPACE(fd)	while (c == ' ' || c == '\t') c = fgetc(fd)
@@ -181,6 +187,12 @@ int assemble_file(const char *file_name, TYPE *buf)
 			else if (!strcmp (tmp, "nzjump")) buf[buf_idx++] = OP_NZJUMP;
 			else if (!strcmp (tmp, "cmpeq")) buf[buf_idx++] = OP_CMPEQ;
 			else if (!strcmp (tmp, "cmpne")) buf[buf_idx++] = OP_CMPNE;
+			else if (!strcmp (tmp, "cmpgt")) buf[buf_idx++] = OP_CMPGT;
+			else if (!strcmp (tmp, "cmplt")) buf[buf_idx++] = OP_CMPLT;
+			else if (!strcmp (tmp, "cmpge")) buf[buf_idx++] = OP_CMPGE;
+			else if (!strcmp (tmp, "cmple")) buf[buf_idx++] = OP_CMPLE;
+			else if (!strcmp (tmp, "and")) buf[buf_idx++] = OP_AND;
+			else if (!strcmp (tmp, "or")) buf[buf_idx++] = OP_OR;
 			else if (!strcmp (tmp, "ret")) buf[buf_idx++] = OP_RET;
 			else if (!strcmp (tmp, "call")) buf[buf_idx++] = OP_CALL;
 			else if (!strcmp (tmp, "pushi")) buf[buf_idx++] = OP_PUSHI;
@@ -368,6 +380,30 @@ void execute_binary(TYPE *m)
 				break;
 			case OP_CMPNE: NEED_STACK(2);
 				m[sh + 1] = (m[sh] != m[sh + 1]);
+				sh++;
+				break;
+			case OP_CMPLT: NEED_STACK(2);
+				m[sh + 1] = (m[sh] > m[sh + 1]);
+				sh++;
+				break;
+			case OP_CMPGT: NEED_STACK(2);
+				m[sh + 1] = (m[sh] < m[sh + 1]);
+				sh++;
+				break;
+			case OP_CMPGE: NEED_STACK(2);
+				m[sh + 1] = (m[sh] <= m[sh + 1]);
+				sh++;
+				break;
+			case OP_CMPLE: NEED_STACK(2);
+				m[sh + 1] = (m[sh] >= m[sh + 1]);
+				sh++;
+				break;
+			case OP_AND: NEED_STACK(2);
+				m[sh + 1] = (m[sh] && m[sh + 1]);
+				sh++;
+				break;
+			case OP_OR: NEED_STACK(2);
+				m[sh + 1] = (m[sh] || m[sh + 1]);
 				sh++;
 				break;
 			case OP_INPUT:
