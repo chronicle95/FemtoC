@@ -1251,6 +1251,9 @@ int parse_func(char* name)
 int parse_root()
 {
 	char id[ID_SZ];
+	write_strln ("    pushl __memp");
+	write_strln ("    pushl __the_end");
+	write_strln ("    popi");
 	write_strln ("    pushl main");
 	write_strln ("    call");
 	write_strln ("    halt");
@@ -1303,6 +1306,7 @@ int parse_root()
 			break;
 		}
 	}
+	write_strln ("__the_end:");
 	/* At this moment we always return 1
 	 * with no error checks */
 	return 1;
