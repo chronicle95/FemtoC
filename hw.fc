@@ -5,10 +5,25 @@ int puts (char *s)
 		putchar (*s);
 		s = s + 1;
 	}
-	putchar (10);
+}
+
+int gets (char *s)
+{
+	char c = 0;
+	while (c != 10)
+	{
+		c = getchar ();
+		*s = c;
+		s = s + 1;
+	}
+	*s = 0;
 }
 
 int main()
 {
-	puts ("Hello, World!");
+	char name[10];
+	puts ("Type your name: ");
+	gets (name);
+	puts ("Hello, ");
+	puts (name);
 }
