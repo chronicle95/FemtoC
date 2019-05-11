@@ -103,6 +103,7 @@ int clear_memory(char *p, int size)
 		p = p + 1;
 		size = size - 1;
 	}
+	return 0;
 }
 
 int gen_label(char *dst)
@@ -188,6 +189,7 @@ int error_log(char *s)
 {
 	write_str (";; [ERROR]: ");
 	write_strln (s);
+	return 0;
 }
 
 int write_num(int n)

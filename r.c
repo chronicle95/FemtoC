@@ -254,7 +254,7 @@ int assemble_file(const char *file_name, TYPE *buf)
 		{
 			buf[buf_idx] = OP_PUSH;
 			buf_idx++;
-			if (l[buf[buf_idx]].addr == -1)
+			if (l[buf[buf_idx]].addr == (TYPE)-1)
 			{
 				printf ("error: unresolved label: %s\n", l[buf[buf_idx]].text);
 				return 0;
@@ -410,8 +410,10 @@ void execute_binary(TYPE *m)
 				sh--;
 				if (debug_mode)
 				{
+					int d;
 					printf (" Inp.(int): ");
-					scanf ("%d", &m[sh]);
+					scanf ("%d", &d);
+					m[sh] = d;
 				}
 				else
 				{
