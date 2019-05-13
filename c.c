@@ -1247,6 +1247,9 @@ int parse_func(char* name)
 	/* Return statement */
 	write_strln ("    ret");
 
+	/* Erase list of local vars */
+	clear_memory (loc_p, LOC_SZ);
+
 	return 1;
 }
 
