@@ -58,6 +58,94 @@ typedef struct asm_label
 
 } asm_label;
 
+typedef struct asm_opcode
+{
+	int code;
+	char op[ID_SZ];
+	struct asm_opcode *next;
+} asm_opcode;
+
+asm_opcode *first = NULL;
+
+void append_opcode(int code, const char *op)
+{
+	asm_opcode *p = first;
+	while (p && p->next) p = p->next;
+	if (!p)
+	{
+		first = (asm_opcode*) malloc (sizeof(asm_opcode));
+		strcpy (first->op, op);
+		first->code = code;
+		first->next = NULL;
+	}
+	else
+	{
+		p->next = (asm_opcode*) malloc (sizeof(asm_opcode));
+		strcpy (p->next->op, op);
+		p->next->code = code;
+		p->next->next = NULL;
+	}
+}
+
+const char *get_opcode (int code)
+{
+	asm_opcode *p = first;
+	while (p)
+	{
+		if (p->code == code) break;
+		p = p->next;
+	}
+	if (!p) return NULL;
+	return p->op;
+}
+
+int get_opcode_i (const char *op)
+{
+	asm_opcode *p = first;
+	while (p)
+	{
+		if (!strcmp (p->op, op)) break;
+		p = p->next;
+	}
+	if (!p) return -1;
+	return p->code;
+}
+
+void init_opcodes()
+{
+	append_opcode (OP_NOP, "nop");
+	append_opcode (OP_ADD, "add");
+	append_opcode (OP_SUB, "sub");
+	append_opcode (OP_DIV, "div");
+	append_opcode (OP_MUL, "mul");
+	append_opcode (OP_MOD, "mod");
+	append_opcode (OP_INV, "inv");
+	append_opcode (OP_NOT, "not");
+	append_opcode (OP_AND, "and");
+	append_opcode (OP_OR, "or");
+	append_opcode (OP_DUP, "dup");
+	append_opcode (OP_DROP, "drop");
+	append_opcode (OP_SWAP, "swap");
+	append_opcode (OP_PUSH, "push");
+	append_opcode (OP_PUSHL, "pushl");
+	append_opcode (OP_CMPEQ, "cmpeq");
+	append_opcode (OP_CMPNE, "cmpne");
+	append_opcode (OP_CMPLT, "cmplt");
+	append_opcode (OP_CMPGT, "cmpgt");
+	append_opcode (OP_CMPLE, "cmple");
+	append_opcode (OP_CMPGE, "cmpge");
+	append_opcode (OP_JUMP, "jump");
+	append_opcode (OP_NZJUMP, "nzjump");
+	append_opcode (OP_PUSHI, "pushi");
+	append_opcode (OP_PUSHSF, "pushsf");
+	append_opcode (OP_POPI, "popi");
+	append_opcode (OP_CALL, "call");
+	append_opcode (OP_RET, "ret");
+	append_opcode (OP_INPUT, "input");
+	append_opcode (OP_OUTPUT, "output");
+	append_opcode (OP_HALT, "halt");
+}
+
 void show_info()
 {
 	puts ("Development runtime for FemtoC");
@@ -172,36 +260,8 @@ int assemble_file(const char *file_name, TYPE *buf)
 		else if (tmp_idx != 0)
 		{
 			/* process opcode */
-			if (!strcmp (tmp, "nop")) buf[buf_idx++] = OP_NOP;
-			else if (!strcmp (tmp, "add")) buf[buf_idx++] = OP_ADD;
-			else if (!strcmp (tmp, "sub")) buf[buf_idx++] = OP_SUB;
-			else if (!strcmp (tmp, "mul")) buf[buf_idx++] = OP_MUL;
-			else if (!strcmp (tmp, "div")) buf[buf_idx++] = OP_DIV;
-			else if (!strcmp (tmp, "mod")) buf[buf_idx++] = OP_MOD;
-			else if (!strcmp (tmp, "inv")) buf[buf_idx++] = OP_INV;
-			else if (!strcmp (tmp, "not")) buf[buf_idx++] = OP_NOT;
-			else if (!strcmp (tmp, "dup")) buf[buf_idx++] = OP_DUP;
-			else if (!strcmp (tmp, "drop")) buf[buf_idx++] = OP_DROP;
-			else if (!strcmp (tmp, "swap")) buf[buf_idx++] = OP_SWAP;
-			else if (!strcmp (tmp, "jump")) buf[buf_idx++] = OP_JUMP;
-			else if (!strcmp (tmp, "nzjump")) buf[buf_idx++] = OP_NZJUMP;
-			else if (!strcmp (tmp, "cmpeq")) buf[buf_idx++] = OP_CMPEQ;
-			else if (!strcmp (tmp, "cmpne")) buf[buf_idx++] = OP_CMPNE;
-			else if (!strcmp (tmp, "cmpgt")) buf[buf_idx++] = OP_CMPGT;
-			else if (!strcmp (tmp, "cmplt")) buf[buf_idx++] = OP_CMPLT;
-			else if (!strcmp (tmp, "cmpge")) buf[buf_idx++] = OP_CMPGE;
-			else if (!strcmp (tmp, "cmple")) buf[buf_idx++] = OP_CMPLE;
-			else if (!strcmp (tmp, "and")) buf[buf_idx++] = OP_AND;
-			else if (!strcmp (tmp, "or")) buf[buf_idx++] = OP_OR;
-			else if (!strcmp (tmp, "ret")) buf[buf_idx++] = OP_RET;
-			else if (!strcmp (tmp, "call")) buf[buf_idx++] = OP_CALL;
-			else if (!strcmp (tmp, "pushi")) buf[buf_idx++] = OP_PUSHI;
-			else if (!strcmp (tmp, "pushsf")) buf[buf_idx++] = OP_PUSHSF;
-			else if (!strcmp (tmp, "popi")) buf[buf_idx++] = OP_POPI;
-			else if (!strcmp (tmp, "halt")) buf[buf_idx++] = OP_HALT;
-			else if (!strcmp (tmp, "input")) buf[buf_idx++] = OP_INPUT;
-			else if (!strcmp (tmp, "output")) buf[buf_idx++] = OP_OUTPUT;
-			else if (!strcmp (tmp, "pushl"))
+			int op = get_opcode_i (tmp);
+			if (op == OP_PUSHL)
 			{
 				int i;
 				IGN_WHITESPACE (f);
@@ -230,13 +290,22 @@ int assemble_file(const char *file_name, TYPE *buf)
 				buf[buf_idx++] = OP_PUSHL;
 				buf[buf_idx++] = i;
 			}
-			else if (!strcmp (tmp, "push"))
+			else if (op == OP_PUSH)
 			{
 				IGN_WHITESPACE (f);
 				for (tmp_idx = 0; IS_NUMBER (c); tmp[tmp_idx++] = c, c = fgetc(f));
 				tmp[tmp_idx] = 0;
 				buf[buf_idx++] = OP_PUSH;
 				buf[buf_idx++] = atoi (tmp);
+			}
+			else if (op != -1)
+			{
+				buf[buf_idx++] = op;
+			}
+			else
+			{
+				printf ("error: bad opcode: %s\n", tmp);
+				return 0;
 			}
 			tmp_idx = 0;
 		}
@@ -284,7 +353,7 @@ void execute_binary(TYPE *m)
 	{
 		if (debug_mode)
 		{
-			printf ("@%06d OP_%-4d ", cp, m[cp]);
+			printf ("@%06d %-6s ", cp, get_opcode(m[cp]));
 		}
 #define NEED_STACK(must_have) do {\
 			if (debug_mode && ((BUF_SZ - sh) < must_have)) {\
@@ -478,6 +547,7 @@ int main(int argc, char **argv)
 	{
 		debug_mode = 1;
 	}
+	init_opcodes ();
 	execute_file (argv[1 + debug_mode]);
 	if (debug_mode)
 	{
