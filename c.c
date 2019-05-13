@@ -1147,6 +1147,9 @@ int parse_statement()
 		write_strln ("    swap");
 		write_strln ("    popi");
 		write_strln ("    add");
+		/* leave one number on stack
+		 * that is the pointer */
+		write_strln ("    dup");
 		write_strln ("    pushl __memp");
 		write_strln ("    swap");
 		write_strln ("    popi");
