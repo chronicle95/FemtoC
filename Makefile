@@ -1,7 +1,8 @@
 all:
 	gcc c.c -o cc
 	gcc r.c -o rr
-test:	all
-	cat test.fc | ./cc > test.s
+demo:	all
+	cat hw.fc | ./cc > hw.s
+	./rr hw.s
 clean:
-	rm -f cc rr test.s
+	rm -f cc rr hw.s
