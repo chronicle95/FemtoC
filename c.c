@@ -68,12 +68,13 @@
  */
 
 
-/* Global variables */
-int ID_SZ = 24;
-int SRC_SZ = 32000;
-int OUT_SZ = 65000;
-int LOC_SZ = 16000;
-int GBL_SZ = 16000;
+/* Global variables: Limits */
+int ID_SZ = 24;     /* maximum identifier length */
+int SRC_SZ = 32000; /* up to ~2000 lines of C source code */
+int OUT_SZ = 65000; /* up to ~5500 lines of assembly output */
+int LOC_SZ = 800;   /* up to 32 local variables */
+int GBL_SZ = 6400;  /* up to 256 global identifiers (f + v) */
+int ARG_SZ = 200;   /* up to 8 arguments per function */
 
 char* src_p = 0; /* source code pointer
 		    points to current location */
@@ -83,7 +84,12 @@ char* loc_p = 0; /* function locals list.
 		    points to the beginning.
 		    record goes as follow:
 
-		    f-arg f-arg f-var ... */
+		    f-var0 f-var1 f-var2 ... */
+char* arg_p = 0; /* function arguments list.
+		    points to the beginning.
+		    record goes as follow:
+
+		    f-arg0 f-arg1 f-arg2 ... */
 char* gbl_p = 0; /* global variable list.
 		    points to the beginning.
 		    record goes as follow:
@@ -502,6 +508,13 @@ int parse_operand()
 			write_strln ("    pushsf");
 			write_str ("    push ");
 			write_numln (idx);
+			write_strln ("    sub");
+		}
+		else if (find_var (arg_p, buf, &idx))
+		{
+			write_strln ("    pushsf");
+			write_str ("    push ");
+			write_numln (idx);
 			write_strln ("    add");
 		}
 		else if (find_var (gbl_p, buf, &idx))
@@ -587,6 +600,14 @@ int parse_operand()
 		else
 		{
 			if (find_var (loc_p, buf, &idx))
+			{
+				write_strln ("    pushsf");
+				write_str ("    push ");
+				write_numln (idx);
+				write_strln ("    sub");
+				write_strln ("    pushi");
+			}
+			else if (find_var (arg_p, buf, &idx))
 			{
 				write_strln ("    pushsf");
 				write_str ("    push ");
@@ -988,6 +1009,8 @@ int parse_statement()
 		{
 			return 0;
 		}
+		/* Dereference a pointer */
+		write_strln ("    pushi");
 		if (!read_sym ('='))
 		{
 			return 0;
@@ -1092,6 +1115,13 @@ int parse_statement()
 			write_strln ("    pushsf");
 			write_str ("    push ");
 			write_numln (idx);
+			write_strln ("    sub");
+		}
+		else if (find_var (arg_p, id, &idx))
+		{
+			write_strln ("    pushsf");
+			write_str ("    push ");
+			write_numln (idx);
 			write_strln ("    add");
 		}
 		else if (find_var (gbl_p, id, &idx))
@@ -1106,7 +1136,7 @@ int parse_statement()
 			write_strln ("    pushsf");
 			write_str ("    push ");
 			write_numln (idx);
-			write_strln ("    add");
+			write_strln ("    sub");
 		}
 		write_strln ("    swap");
 		write_strln ("    popi");
@@ -1125,6 +1155,10 @@ int parse_statement()
 	/* Local array definition */
 	else if (read_sym ('['))
 	{
+		/* Reserve memory cell for array pointer */
+		write_strln ("    push 0");
+
+		/* Calculate array size and leave it on the stack */
 		if (!parse_expr ())
 		{
 			return 0;
@@ -1139,17 +1173,18 @@ int parse_statement()
 
 		store_var (loc_p, id);
 		find_var (loc_p, id, &idx);
+
 		write_strln ("    pushsf");
 		write_str ("    push ");
 		write_numln (idx);
-		write_strln ("    add");
+		write_strln ("    sub");
 
+		/* Initialize the array pointer */
 		write_strln ("    swap");
 		write_strln ("    popi");
+
+		/* Allocate memory for the array */
 		write_strln ("    add");
-		/* leave one number on stack
-		 * that is the pointer */
-		write_strln ("    dup");
 		write_strln ("    pushl __memp");
 		write_strln ("    swap");
 		write_strln ("    popi");
@@ -1188,9 +1223,7 @@ int parse_argslist()
 			return 0;
 		}
 
-		store_var (loc_p, id);
-		/* TODO: write number from stack
-		 * to local variable (pop) */
+		store_var (arg_p, id);
 
 		if (!read_sym (','))
 		{
@@ -1203,9 +1236,10 @@ int parse_argslist()
 
 int parse_func(char* name)
 {
-	/* Put function name to locals list so that
-	 * first argument index starts with 1 */
+	/* Put function name to locals and arguments lists
+	 * so that the first entry index starts with 1 */
 	store_var (loc_p, name);
+	store_var (arg_p, name);
 
 	/* Put function name to globals list */
 	store_var (gbl_p, name);
@@ -1250,7 +1284,8 @@ int parse_func(char* name)
 	/* Return statement */
 	write_strln ("    ret");
 
-	/* Erase list of local vars */
+	/* Erase lists of args and locals */
+	clear_memory (arg_p, ARG_SZ);
 	clear_memory (loc_p, LOC_SZ);
 
 	return 1;
@@ -1327,17 +1362,20 @@ int main()
 	char source[SRC_SZ];
 	char result[OUT_SZ];
 	char locals[LOC_SZ];
+	char arguments[ARG_SZ];
 	char globals[GBL_SZ];
 
 	clear_memory (source, SRC_SZ);
 	clear_memory (result, OUT_SZ);
 	clear_memory (locals, LOC_SZ);
 	clear_memory (globals, GBL_SZ);
+	clear_memory (arguments, ARG_SZ);
 
-	src_p = source;  *src_p = 0;
-	out_p = result;  *out_p = 0;
-	loc_p = locals;  *loc_p = 0;
-	gbl_p = globals; *gbl_p = 0;
+	src_p = source;
+	out_p = result;
+	loc_p = locals;
+	arg_p = arguments;
+	gbl_p = globals;
 
 	while (1)
 	{
