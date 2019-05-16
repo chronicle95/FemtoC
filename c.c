@@ -477,9 +477,9 @@ int parse_invoke(char *name)
 		return 0;
 	}
 
-	write_str ("    pushl ");
+	write_str ("  pushl ");
 	write_strln (name);
-	write_strln ("    call");
+	write_strln ("  call");
 
 	return 1;
 }
@@ -493,7 +493,7 @@ int parse_operand()
 	{
 		if (parse_operand())
 		{
-			write_strln ("    not");
+			write_strln ("  not");
 			return 1;
 		}
 	}
@@ -505,21 +505,21 @@ int parse_operand()
 		}
 		if (find_var (loc_p, buf, &idx))
 		{
-			write_strln ("    pushsf");
-			write_str ("    push ");
+			write_strln ("  pushsf");
+			write_str ("  push ");
 			write_numln (idx);
-			write_strln ("    sub");
+			write_strln ("  sub");
 		}
 		else if (find_var (arg_p, buf, &idx))
 		{
-			write_strln ("    pushsf");
-			write_str ("    push ");
+			write_strln ("  pushsf");
+			write_str ("  push ");
 			write_numln (idx);
-			write_strln ("    add");
+			write_strln ("  add");
 		}
 		else if (find_var (gbl_p, buf, &idx))
 		{
-			write_str ("    pushl ");
+			write_str ("  pushl ");
 			write_strln (buf);
 		}
 		else
@@ -532,7 +532,7 @@ int parse_operand()
 	{
 		if (parse_operand())
 		{
-			write_strln ("    inv");
+			write_strln ("  inv");
 			return 1;
 		}
 	}
@@ -540,7 +540,7 @@ int parse_operand()
 	{
 		if (parse_operand())
 		{
-			write_strln ("    pushi");
+			write_strln ("  pushi");
 			return 1;
 		}
 	}
@@ -555,23 +555,23 @@ int parse_operand()
 	{
 		gen_label (buf);
 		gen_label (lbl);
-		write_str ("    pushl ");
+		write_str ("  pushl ");
 		write_strln (buf);
-		write_strln ("    jump");
+		write_strln ("  jump");
 		write_str (lbl);
 		write_strln (":");
-		write_str ("   .byte");
+		write_str (" .byte");
 		read_str_const ();
 		write_strln (" 0");
 		write_str (buf);
 		write_strln (":");
-		write_str ("    pushl ");
+		write_str ("  pushl ");
 		write_strln (lbl);
 		return 1;
 	}
 	else if (read_sym (39))
 	{
-		write_str ("    push ");
+		write_str ("  push ");
 		write_numln (*src_p);
 		src_p = src_p + 1;
 		if (!read_sym (39))
@@ -582,7 +582,7 @@ int parse_operand()
 	}
 	else if (read_number (buf))
 	{
-		write_str ("    push ");
+		write_str ("  push ");
 		write_strln (buf);
 		return 1;
 	}
@@ -594,32 +594,32 @@ int parse_operand()
 			{
 				return 0;
 			}
-			write_strln ("    pushl __retval");
-			write_strln ("    pushi");
+			write_strln ("  pushl __retval");
+			write_strln ("  pushi");
 		}
 		else
 		{
 			if (find_var (loc_p, buf, &idx))
 			{
-				write_strln ("    pushsf");
-				write_str ("    push ");
+				write_strln ("  pushsf");
+				write_str ("  push ");
 				write_numln (idx);
-				write_strln ("    sub");
-				write_strln ("    pushi");
+				write_strln ("  sub");
+				write_strln ("  pushi");
 			}
 			else if (find_var (arg_p, buf, &idx))
 			{
-				write_strln ("    pushsf");
-				write_str ("    push ");
+				write_strln ("  pushsf");
+				write_str ("  push ");
 				write_numln (idx);
-				write_strln ("    add");
-				write_strln ("    pushi");
+				write_strln ("  add");
+				write_strln ("  pushi");
 			}
 			else if (find_var (gbl_p, buf, &idx))
 			{
-				write_str ("    pushl ");
+				write_str ("  pushl ");
 				write_strln (buf);
-				write_strln ("    pushi");
+				write_strln ("  pushi");
 			}
 			else
 			{
@@ -632,9 +632,9 @@ int parse_operand()
 	{
 		if (parse_operand ())
 		{
-			write_strln ("    inv");
-			write_strln ("    push 1");
-			write_strln ("    add");
+			write_strln ("  inv");
+			write_strln ("  push 1");
+			write_strln ("  add");
 			return 1;
 		}
 	}
@@ -658,34 +658,34 @@ int parse_expr()
 		if (read_sym ('+'))
 		{
 			parse_operand ();
-			write_strln ("    add");
+			write_strln ("  add");
 		}
 		else if (read_sym ('-'))
 		{
 			parse_operand ();
-			write_strln ("    sub");
+			write_strln ("  sub");
 		}
 		else if (read_sym ('*'))
 		{
 			parse_operand ();
-			write_strln ("    mul");
+			write_strln ("  mul");
 		}
 		else if (read_sym ('/'))
 		{
 			parse_operand ();
-			write_strln ("    div");
+			write_strln ("  div");
 		}
 		else if (read_sym ('%'))
 		{
 			parse_operand ();
-			write_strln ("    mod");
+			write_strln ("  mod");
 		}
 		else if (read_sym ('='))
 		{
 			if (read_sym ('='))
 			{
 				parse_operand ();
-				write_strln ("    cmpeq");
+				write_strln ("  cmpeq");
 			}
 			else
 			{
@@ -700,7 +700,7 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("    cmple");
+				write_strln ("  cmple");
 			}
 			else
 			{
@@ -708,7 +708,7 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("    cmplt");
+				write_strln ("  cmplt");
 			}
 		}
 		else if (read_sym ('>'))
@@ -719,7 +719,7 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("    cmpge");
+				write_strln ("  cmpge");
 			}
 			else
 			{
@@ -727,7 +727,7 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("    cmpgt");
+				write_strln ("  cmpgt");
 			}
 		}
 		else if (read_sym ('!'))
@@ -740,7 +740,7 @@ int parse_expr()
 			{
 				return 0;
 			}
-			write_strln ("    cmpne");
+			write_strln ("  cmpne");
 		}
 		else if (read_sym ('&'))
 		{
@@ -750,11 +750,11 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("    not");
-				write_strln ("    swap");
-				write_strln ("    not");
-				write_strln ("    or");
-				write_strln ("    not");
+				write_strln ("  not");
+				write_strln ("  swap");
+				write_strln ("  not");
+				write_strln ("  or");
+				write_strln ("  not");
 			}
 			else
 			{
@@ -762,7 +762,7 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("    and");
+				write_strln ("  and");
 			}
 		}
 		else if (read_sym ('|'))
@@ -773,11 +773,11 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("    not");
-				write_strln ("    swap");
-				write_strln ("    not");
-				write_strln ("    and");
-				write_strln ("    not");
+				write_strln ("  not");
+				write_strln ("  swap");
+				write_strln ("  not");
+				write_strln ("  and");
+				write_strln ("  not");
 			}
 			else
 			{
@@ -785,7 +785,7 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("    or");
+				write_strln ("  or");
 			}
 		}
 		else
@@ -820,11 +820,11 @@ int parse_conditional()
 		return 0;
 	}
 
-	write_strln ("    dup");
-	write_strln ("    not");
-	write_str ("    pushl ");
+	write_strln ("  dup");
+	write_strln ("  not");
+	write_str ("  pushl ");
 	write_strln (lbl);
-	write_strln ("    nzjump");
+	write_strln ("  nzjump");
 
 	if (!read_sym ('{'))
 	{
@@ -850,9 +850,9 @@ int parse_conditional()
 		write_strln (":");
 
 		gen_label (lbl);
-		write_str ("    pushl ");
+		write_str ("  pushl ");
 		write_strln (lbl);
-		write_strln ("    nzjump");
+		write_strln ("  nzjump");
 
 		if (read_sym ('{'))
 		{
@@ -876,7 +876,7 @@ int parse_conditional()
 	{
 		write_str (lbl);
 		write_strln (":");
-		write_strln ("    drop");
+		write_strln ("  drop");
 	}
 
 	return 1;
@@ -916,10 +916,10 @@ int parse_loop_while()
 		return 0;
 	}
 
-	write_strln ("    not");
-	write_str ("    pushl ");
+	write_strln ("  not");
+	write_str ("  pushl ");
 	write_strln (lbl2);
-	write_strln ("    nzjump");
+	write_strln ("  nzjump");
 
 	if (read_sym ('{'))
 	{
@@ -936,9 +936,9 @@ int parse_loop_while()
 		return 0;
 	}
 
-	write_str ("    pushl ");
+	write_str ("  pushl ");
 	write_strln (lbl1);
-	write_strln ("    jump");
+	write_strln ("  jump");
 	write_str (lbl2);
 	write_strln (":");
 
@@ -963,7 +963,7 @@ int parse_gvar(char* name)
 	}
 	write_str (name);
 	write_strln (":");
-	write_str ("   .byte ");
+	write_str (" .byte ");
 	write_strln (num);
 	store_var (gbl_p, name);
 	return 1;
@@ -986,7 +986,7 @@ int parse_garr(char* name)
 	}
 	write_str (name);
 	write_strln (":");
-	write_str ("   .zero ");
+	write_str (" .zero ");
 	write_strln (num);
 	store_var (gbl_p, name);
 	return 1;
@@ -1010,7 +1010,7 @@ int parse_statement()
 			return 0;
 		}
 		/* Dereference a pointer */
-		write_strln ("    pushi");
+		write_strln ("  pushi");
 		if (!read_sym ('='))
 		{
 			return 0;
@@ -1019,7 +1019,7 @@ int parse_statement()
 		{
 			return 0;
 		}
-		write_strln ("    popi");
+		write_strln ("  popi");
 		goto semicolon_end;
 	}
 
@@ -1032,10 +1032,10 @@ int parse_statement()
 		{
 			return 0;
 		}
-		write_strln ("    pushl __retval");
-		write_strln ("    swap");
-		write_strln ("    popi");
-		write_strln ("    ret");
+		write_strln ("  pushl __retval");
+		write_strln ("  swap");
+		write_strln ("  popi");
+		write_strln ("  ret");
 		goto semicolon_end;
 	}
 	else if (read_sym_s ("if"))
@@ -1063,18 +1063,18 @@ int parse_statement()
 			error_log ("label expected");
 			return 0;
 		}
-		write_str ("    pushl __");
+		write_str ("  pushl __");
 		write_strln (id);
-		write_strln ("    jump");
+		write_strln ("jump");
 		goto semicolon_end;
 	}
 	else if (read_sym_s ("break"))
 	{
 		if (lbl_end)
 		{
-			write_str ("    pushl ");
+			write_str ("  pushl ");
 			write_strln (lbl_end);
-			write_strln ("    jump");
+			write_strln ("  jump");
 		}
 		goto semicolon_end;
 	}
@@ -1082,9 +1082,9 @@ int parse_statement()
 	{
 		if (lbl_sta)
 		{
-			write_str ("    pushl ");
+			write_str ("  pushl ");
 			write_strln (lbl_sta);
-			write_strln ("    jump");
+			write_strln ("  jump");
 		}
 		goto semicolon_end;
 	}
@@ -1112,34 +1112,34 @@ int parse_statement()
 		}
 		if (find_var (loc_p, id, &idx))
 		{
-			write_strln ("    pushsf");
-			write_str ("    push ");
+			write_strln ("  pushsf");
+			write_str ("  push ");
 			write_numln (idx);
-			write_strln ("    sub");
+			write_strln ("  sub");
 		}
 		else if (find_var (arg_p, id, &idx))
 		{
-			write_strln ("    pushsf");
-			write_str ("    push ");
+			write_strln ("  pushsf");
+			write_str ("  push ");
 			write_numln (idx);
-			write_strln ("    add");
+			write_strln ("  add");
 		}
 		else if (find_var (gbl_p, id, &idx))
 		{
-			write_str ("    pushl ");
+			write_str ("  pushl ");
 			write_strln (id);
 		}
 		else
 		{
 			store_var (loc_p, id);
 			find_var (loc_p, id, &idx);
-			write_strln ("    pushsf");
-			write_str ("    push ");
+			write_strln ("  pushsf");
+			write_str ("  push ");
 			write_numln (idx);
-			write_strln ("    sub");
+			write_strln ("  sub");
 		}
-		write_strln ("    swap");
-		write_strln ("    popi");
+		write_strln ("  swap");
+		write_strln ("  popi");
 		goto semicolon_end;
 	}
 
@@ -1156,7 +1156,7 @@ int parse_statement()
 	else if (read_sym ('['))
 	{
 		/* Reserve memory cell for array pointer */
-		write_strln ("    push 0");
+		write_strln ("  push 0");
 
 		/* Calculate array size and leave it on the stack */
 		if (!parse_expr ())
@@ -1167,27 +1167,27 @@ int parse_statement()
 		{
 			return 0;
 		}
-		write_strln ("    pushl __memp");
-		write_strln ("    pushi");
-		write_strln ("    dup");
+		write_strln ("  pushl __memp");
+		write_strln ("  pushi");
+		write_strln ("  dup");
 
 		store_var (loc_p, id);
 		find_var (loc_p, id, &idx);
 
-		write_strln ("    pushsf");
-		write_str ("    push ");
+		write_strln ("  pushsf");
+		write_str ("  push ");
 		write_numln (idx);
-		write_strln ("    sub");
+		write_strln ("  sub");
 
 		/* Initialize the array pointer */
-		write_strln ("    swap");
-		write_strln ("    popi");
+		write_strln ("  swap");
+		write_strln ("  popi");
 
 		/* Allocate memory for the array */
-		write_strln ("    add");
-		write_strln ("    pushl __memp");
-		write_strln ("    swap");
-		write_strln ("    popi");
+		write_strln ("  add");
+		write_strln ("  pushl __memp");
+		write_strln ("  swap");
+		write_strln ("  popi");
 
 		goto semicolon_end;
 	}
@@ -1282,7 +1282,7 @@ int parse_func(char* name)
 	}
 
 	/* Return statement */
-	write_strln ("    ret");
+	write_strln ("  ret");
 
 	/* Erase lists of args and locals */
 	clear_memory (arg_p, ARG_SZ);
@@ -1294,28 +1294,28 @@ int parse_func(char* name)
 int parse_root()
 {
 	char id[ID_SZ];
-	write_strln ("    pushl __memp");
-	write_strln ("    pushl __the_end");
-	write_strln ("    popi");
-	write_strln ("    pushl main");
-	write_strln ("    call");
-	write_strln ("    halt");
+	write_strln ("  pushl __memp");
+	write_strln ("  pushl __the_end");
+	write_strln ("  popi");
+	write_strln ("  pushl main");
+	write_strln ("  call");
+	write_strln ("  halt");
 	write_strln ("getchar:");
-	write_strln ("    pushl __retval");
-	write_strln ("    input");
-	write_strln ("    popi");
-	write_strln ("    ret");
+	write_strln ("  pushl __retval");
+	write_strln ("  input");
+	write_strln ("  popi");
+	write_strln ("  ret");
 	write_strln ("putchar:");
-	write_strln ("    pushsf");
-	write_strln ("    push 1");
-	write_strln ("    add");
-	write_strln ("    pushi");
-	write_strln ("    output");
-	write_strln ("    ret");
+	write_strln ("  pushsf");
+	write_strln ("  push 1");
+	write_strln ("  add");
+	write_strln ("  pushi");
+	write_strln ("  output");
+	write_strln ("  ret");
 	write_strln ("__retval:");
-	write_strln ("   .byte 0");
+	write_strln (" .byte 0");
 	write_strln ("__memp:");
-	write_strln ("   .byte 0");
+	write_strln (" .byte 0");
 	/* Read identifier as a basis for any
 	 * statement within the program's root. */
 	while (read_id (id))
