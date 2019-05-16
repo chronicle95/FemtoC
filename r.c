@@ -353,6 +353,26 @@ void execute_binary(TYPE *m)
 	{
 		if (debug_mode)
 		{
+			int j, k;
+			for (j=7; j>=0; j--)
+			{
+				if (sh + j < BUF_SZ)
+				{
+					TYPE n = m[sh + j];
+					for (k=0; k<sizeof(TYPE); k++)
+					{
+						printf ("%02x", *((char*)&n + k));
+					}
+				}
+				else
+				{
+					for (k=0; k<sizeof(TYPE); k++)
+					{
+						printf ("..");
+					}
+				}
+				putchar (' ');
+			}
 			printf ("@%06d %-6s ", cp, get_opcode(m[cp]));
 		}
 #define NEED_STACK(must_have) do {\
@@ -517,7 +537,7 @@ void execute_binary(TYPE *m)
 			case OP_HALT:
 				return;
 		}
-#undef STACK
+#undef NEED_STACK
 		if (debug_mode)
 		{
 			printf ("\n");
