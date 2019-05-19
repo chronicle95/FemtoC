@@ -41,7 +41,11 @@
  * mul       - same as addition, but multiplication
  * div       - same as addition, but division
  * mod       - same as addtiion, but remainder of division
- * ret       - return from subroutine
+ * ret       - return from subroutine (all the local variables get dropped,
+ *             as the stack head points to current frame -
+ *             where call was executed, fetches
+ *             the return address, jumps back and
+ *             drops the return address
  * call      - call a subroutine (address is on top of stack,
  *             gets popped, return address is pushed)
  * jump      - unconditional go to label pointed at the stack head
@@ -464,9 +468,16 @@ int read_number(char* dst)
 int parse_expr();
 int parse_invoke(char *name)
 {
+	int argcnt = 0;
+
 	while (1)
 	{
-		if (parse_expr () || read_sym (','))
+		if (parse_expr ())
+		{
+			argcnt = argcnt + 1;
+			continue;
+		}
+		else if (read_sym (','))
 		{
 			continue;
 		}
@@ -477,9 +488,17 @@ int parse_invoke(char *name)
 		return 0;
 	}
 
+	/* Call the subroutine */
 	write_str ("  pushl ");
 	write_strln (name);
 	write_strln ("  call");
+
+	/* Drop the arguments */
+	while (argcnt)
+	{
+		write_strln ("  drop");
+		argcnt = argcnt - 1;
+	}
 
 	return 1;
 }
@@ -1009,8 +1028,6 @@ int parse_statement()
 		{
 			return 0;
 		}
-		/* Dereference a pointer */
-		write_strln ("  pushi");
 		if (!read_sym ('='))
 		{
 			return 0;
@@ -1131,6 +1148,12 @@ int parse_statement()
 		}
 		else
 		{
+			/* In a case of new allocation we need to provide
+			 * space on stack for it so that we a have a place
+			 * to store the value */
+			write_strln ("  dup");
+
+			/* Allocate and point */
 			store_var (loc_p, id);
 			find_var (loc_p, id, &idx);
 			write_strln ("  pushsf");
