@@ -361,7 +361,7 @@ void execute_binary(TYPE *m)
 					TYPE n = m[sh + j];
 					for (k=0; k<sizeof(TYPE); k++)
 					{
-						printf ("%02x", *((char*)&n + k));
+						printf ("%02x", (unsigned char)*((char*)&n + k));
 					}
 				}
 				else
