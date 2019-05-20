@@ -1105,6 +1105,28 @@ int parse_statement()
 		}
 		goto semicolon_end;
 	}
+	else if (read_sym_s ("asm"))
+	{
+		if (!read_sym ('{'))
+		{
+			error_log ("error: `{` expected");
+			return 0;
+		}
+		write_strln(";; ASM {");
+		while (!read_sym ('}'))
+		{
+			read_space ();
+			write_str ("  ");
+			while ((*src_p != 10) && (*src_p != '}'))
+			{
+				write_chr (*src_p);
+				src_p = src_p + 1;
+			}
+			write_chr (10);
+		}
+		write_strln(";; } ASM");
+		return 1;
+	}
 
 	/* Otherwise check for identifier */
 	else if (!read_id (id))
@@ -1323,18 +1345,6 @@ int parse_root()
 	write_strln ("  pushl main");
 	write_strln ("  call");
 	write_strln ("  halt");
-	write_strln ("getchar:");
-	write_strln ("  pushl __retval");
-	write_strln ("  input");
-	write_strln ("  popi");
-	write_strln ("  ret");
-	write_strln ("putchar:");
-	write_strln ("  pushsf");
-	write_strln ("  push 1");
-	write_strln ("  add");
-	write_strln ("  pushi");
-	write_strln ("  output");
-	write_strln ("  ret");
 	write_strln ("__retval:");
 	write_strln (" .byte 0");
 	write_strln ("__memp:");
