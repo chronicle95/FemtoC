@@ -353,15 +353,29 @@ void execute_binary(TYPE *m)
 	{
 		if (debug_mode)
 		{
-			int j, k;
+			/* Print top few values of the stack */
+			int j, k, a_frame;
 			for (j=7; j>=0; j--)
 			{
+				/* Check if current memory cell is a frame */
+				a_frame = 0;
+				for (k = sfh; k<SF_SZ; k++)
+				{
+					if ((sh + j) == sf[k])
+					{
+						a_frame = 1;
+						break;
+					}
+				}
+
 				if (sh + j < BUF_SZ)
 				{
 					TYPE n = m[sh + j];
 					for (k=0; k<sizeof(TYPE); k++)
 					{
+						if (a_frame) printf ("\x1b[4m");
 						printf ("%02x", (unsigned char)*((char*)&n + k));
+						if (a_frame) printf ("\x1b[0m");
 					}
 				}
 				else
