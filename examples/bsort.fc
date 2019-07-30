@@ -1,0 +1,89 @@
+/* Bubblesort example for FemtoC */
+
+char getchar ()
+{
+	asm
+	{
+	  pushl __retval
+	  input
+	  popi
+	}
+}
+
+int putchar (char c)
+{
+	asm
+	{
+	  pushsf
+	  push 1
+	  add
+	  pushi
+	  output
+	}
+}
+
+int puts (char *s)
+{
+	while (*s)
+	{
+		putchar (*s);
+		s = s + 1;
+	}
+}
+
+int gets (char *s)
+{
+	char c = 0;
+	while (c != 10)
+	{
+		c = getchar ();
+		*s = c;
+		s = s + 1;
+	}
+	*s = 0;
+}
+
+int rtrim(char *s)
+{
+	while (*s) s = s + 1;
+	*(s - 1) = 0;
+}
+
+int bubble(char *s)
+{
+	int i = 0;
+	int j = 0;
+	int tmp = 0;
+
+	/* find string length */
+	while (*(s + i)) i = i + 1;
+
+	/* sort the string */
+	while (i > 1)
+	{
+		j = 0;
+		while (j < (i - 1))
+		{
+			if (*(s+j) > *(s+j+1))
+			{
+				tmp = *(s+j+1);
+				*(s+j+1) = *(s+j);
+				*(s+j) = tmp;
+			}
+			j = j + 1;
+		}
+		i = i - 1;
+	}
+}
+
+int main()
+{
+	char data[80];
+	puts ("Input:  ");
+	gets (data);
+	rtrim (data);  /* remove trailing newline */
+	bubble (data);
+	puts ("Output: ");
+	puts (data);
+	putchar (10);
+}
