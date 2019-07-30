@@ -188,7 +188,7 @@ int assemble_file(const char *file_name, TYPE *buf)
 		{
 			for (tmp_idx = 0, c = fgetc(f); IS_ALLOWED(c); tmp[tmp_idx++] = c, c = fgetc(f));
 			tmp[tmp_idx] = 0;
-			if (!strcmp (tmp, "byte"))
+			if (!strcmp (tmp, "word"))
 			{
 				while (c != '\n')
 				{

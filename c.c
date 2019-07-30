@@ -4,6 +4,14 @@
  * Implements stack machine on a linear
  * memory cell set.
  *
+ * This architecture assumes WORD cell size as a single
+ * datatype.
+ * Anything can represent a word depending on the runtime.
+ * This compiler produces assembly listing which is
+ * supposed to be datatype-independent (unless the type
+ * can fit minimum viable storage addressing for the
+ * program).
+ *
  * Memory model:
  *
  * +------+
@@ -67,7 +75,7 @@
  * drop      - remove stack head
  *
  * Preprocessor directives:
- *  .byte ... - a set of constant bytes
+ *  .word ... - a set of constant words
  *  .zero <n> - sequence of N zeroes
  */
 
@@ -579,7 +587,7 @@ int parse_operand()
 		write_strln ("  jump");
 		write_str (lbl);
 		write_strln (":");
-		write_str (" .byte");
+		write_str (" .word");
 		read_str_const ();
 		write_strln (" 0");
 		write_str (buf);
@@ -982,7 +990,7 @@ int parse_gvar(char* name)
 	}
 	write_str (name);
 	write_strln (":");
-	write_str (" .byte ");
+	write_str (" .word ");
 	write_strln (num);
 	store_var (gbl_p, name);
 	return 1;
@@ -1346,9 +1354,9 @@ int parse_root()
 	write_strln ("  call");
 	write_strln ("  halt");
 	write_strln ("__retval:");
-	write_strln (" .byte 0");
+	write_strln (" .word 0");
 	write_strln ("__memp:");
-	write_strln (" .byte 0");
+	write_strln (" .word 0");
 	/* Read identifier as a basis for any
 	 * statement within the program's root. */
 	while (read_id (id))
