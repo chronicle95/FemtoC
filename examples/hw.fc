@@ -2,9 +2,9 @@ char getchar ()
 {
 	asm
 	{
-	pushl __retval
-	input
-	popi
+	  pushl __retval
+	  input
+	  popi
 	}
 }
 
@@ -12,10 +12,11 @@ int putchar (char c)
 {
 	asm
 	{
-	swap
-	dup
-	output
-	swap
+	  pushsf
+	  push 1
+	  add
+	  pushi
+	  output
 	}
 }
 

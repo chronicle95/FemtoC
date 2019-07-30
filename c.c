@@ -1053,14 +1053,27 @@ int parse_statement()
 	 */
 	else if (read_sym_s ("return"))
 	{
+		/* calculate return value */
 		if (!parse_expr ())
 		{
 			return 0;
 		}
+		/* save it */
 		write_strln ("  pushl __retval");
 		write_strln ("  swap");
 		write_strln ("  popi");
-		write_strln ("  ret");
+		/* jump to end of function */
+		idx = 0;
+		while (*(loc_p + idx) != ' ')
+		{
+			*(id + idx) = *(loc_p + idx);
+			idx = idx + 1;
+		}
+		id[idx] = 0;
+		write_str ("  pushl __");
+		write_str (id);
+		write_strln ("_end");
+		write_strln("  jump");
 		goto semicolon_end;
 	}
 	else if (read_sym_s ("if"))
@@ -1205,7 +1218,10 @@ int parse_statement()
 		return 1;
 	}
 
-	/* Local array definition */
+	/* Local array definition.
+	 * It is not placed on stack but instead dynamically
+	 * allocated from pool, only the pointer stays on
+	 * stack */
 	else if (read_sym ('['))
 	{
 		/* Reserve memory cell for array pointer */
@@ -1301,6 +1317,12 @@ int parse_func(char* name)
 	write_str (name);
 	write_strln (":");
 
+	/* Save allocation pointer on stack */
+	write_strln ("  pushl __memp");
+	write_strln ("  pushi");
+	/* ..and reserve dummy local variable with index 1 */
+	store_var (loc_p, "?");
+
 	/* Arguments */
 	if (!parse_argslist ())
 	{
@@ -1333,6 +1355,19 @@ int parse_func(char* name)
 			return 0;
 		}
 	}
+
+	/* Function end label */
+	write_str ("__");
+	write_str (name);
+	write_strln ("_end:");
+
+	/* Release allocated memory (if any) */
+	write_strln ("  pushl __memp");
+	write_strln ("  pushsf");
+	write_strln ("  push 1");
+	write_strln ("  sub");
+	write_strln ("  pushi");
+	write_strln ("  popi");
 
 	/* Return statement */
 	write_strln ("  ret");
