@@ -1069,7 +1069,7 @@ int parse_statement()
 			*(id + idx) = *(loc_p + idx);
 			idx = idx + 1;
 		}
-		id[idx] = 0;
+		*(id + idx) = 0;
 		write_str ("  pushl __");
 		write_str (id);
 		write_strln ("_end");
