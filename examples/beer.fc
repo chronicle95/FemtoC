@@ -1,3 +1,5 @@
+/* 99 bottles song for FemtoC */
+
 int putc(char c) {
 	asm {
 	  pushsf

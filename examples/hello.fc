@@ -1,0 +1,28 @@
+/* Hello World example for FemtoC */
+
+int putchar (char c)
+{
+	asm
+	{
+	  pushsf
+	  push 1
+	  add
+	  pushi
+	  output
+	}
+}
+
+int puts (char *s)
+{
+	while (*s)
+	{
+		putchar (*s);
+		s = s + 1;
+	}
+	putchar (10);
+}
+
+int main()
+{
+	puts ("Hello World!");
+}
