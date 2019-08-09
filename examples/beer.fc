@@ -38,31 +38,52 @@ int puts(char *s)
 	}
 }
 
-int putsnl(char *s)
+int printf(char *fmt)
 {
-	puts (s);
-	putc (10);
-}
-
-int main() {
-	int k = 99;
-	while (k > 0) {
-		putn (k);
-		putsnl (" bottles of beer on the wall,");
-		putn (k);
-		putsnl (" bottles of beer.");
-		putsnl ("Take one down, pass it around,");
-		k = k - 1;
-		if (k != 0)
-		{	
-			putn (k);
+	char *arg = &fmt + 1;
+	while (*fmt)
+	{
+		if (*fmt == '%')
+		{
+			fmt = fmt + 1;
+			if (*fmt == 'c')
+			{
+				putc (*arg);
+			}
+			else if (*fmt == 's')
+			{
+				puts (*arg);
+			}
+			else if (*fmt == 'i')
+			{
+				putn (*arg);
+			}
+			arg = arg + 1;
 		}
 		else
 		{
-			puts ("No more");
+			putc (*fmt);
 		}
-		putsnl (" bottles of beer on the wall.");
-		putc (10);
+		fmt = fmt + 1;
+	}
+}
+
+int main()
+{
+	int k = 99;
+	while (k > 0) {
+		printf ("%i bottles of beer on the wall,%c", k, 10);
+		printf ("%i bottles of beer.%c", k, 10);
+		printf ("Take one down, pass it around,%c", 10);
+		k = k - 1;
+		if (k != 0)
+		{	
+			printf ("%i bottles of beer on the wall.%c%c", k, 10, 10);
+		}
+		else
+		{
+			printf ("No more bottles of beer on the wall.%c%c", 10, 10);
+		}
 	}
 }
 
