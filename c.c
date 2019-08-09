@@ -113,6 +113,18 @@ char* lbl_end = 0; /* Nearest loop end label */
 
 /* Utility functions */
 
+int copy_memory(char *dst, char *src, int size)
+{
+	while (size)
+	{
+		*dst = *src;
+		dst = dst + 1;
+		src = src + 1;
+		size = size - 1;
+	}
+	return 0;
+}
+
 int clear_memory(char *p, int size)
 {
 	while (size > 0)
@@ -477,12 +489,19 @@ int parse_expr();
 int parse_invoke(char *name)
 {
 	int argcnt = 0;
+	int n = 0;
+	int len = 0;
+	char *argpos[ARG_SZ / (ID_SZ + 1) + 1];
+
+	/* use argpos to locate where the output goes */
+	*(argpos + argcnt) = out_p;
 
 	while (1)
 	{
 		if (parse_expr ())
 		{
 			argcnt = argcnt + 1;
+			*(argpos + argcnt) = out_p;
 			continue;
 		}
 		else if (read_sym (','))
@@ -496,16 +515,41 @@ int parse_invoke(char *name)
 		return 0;
 	}
 
+	/* Now that we have all our arguments prepared,
+	 * reverse them so the addressing is right */
+	if (argcnt)
+	{
+		if (argcnt == 2)
+		{
+			write_strln ("  swap");
+		}
+		else
+		{
+			len = *(argpos + argcnt) - *(argpos);
+			copy_memory (*(argpos + argcnt), *(argpos), len);
+			n = 0;
+			while (n < argcnt)
+			{
+				copy_memory ((len - (*(argpos + n + 1) - *(argpos))) + *(argpos),
+					*(argpos + n) + len,
+					*(argpos + n + 1) - *(argpos + n));
+				n = n + 1;
+			}
+			clear_memory (*(argpos) + len, len);
+		}
+	}
+
 	/* Call the subroutine */
 	write_str ("  pushl ");
 	write_strln (name);
 	write_strln ("  call");
 
 	/* Drop the arguments */
-	while (argcnt)
+	n = 0;
+	while (n < argcnt)
 	{
 		write_strln ("  drop");
-		argcnt = argcnt - 1;
+		n = n + 1;
 	}
 
 	return 1;
