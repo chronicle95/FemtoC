@@ -13,7 +13,8 @@ It is restricted in many ways and is still work in progress.
 It expects the program on `stdin` and produces assembly code to `stdout`.
 
 So to compile a program you can do pipelining:
-`$ cat hw.fc | ./cc > hw.s`
+`$ cat examples/hello.fc | ./cc > hello.s`
 
-And to execute the assembly, use the supplied runtime:
-`$ ./rr hw.s`
+And then execute the assembly using the supplied runtime:
+`$ ./rr hello.s`
+
