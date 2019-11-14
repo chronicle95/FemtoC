@@ -807,6 +807,93 @@ int parse_expr()
 }
 
 int parse_statement();
+int parse_keyword_block()
+{
+	if (read_sym_s ("if"))
+	{
+		if (!parse_conditional ())
+		{
+			return 0;
+		}
+	}
+	else if (read_sym_s ("while"))
+	{
+		if (!parse_loop_while ())
+		{
+			return 0;
+		}
+	}
+	else if (read_sym_s ("for"))
+	{
+		if (!parse_loop_for ())
+		{
+			return 0;
+		}
+	}
+	else if (read_sym_s ("asm"))
+	{
+		if (!read_sym ('{'))
+		{
+			error_log ("error: `{` expected");
+			return 0;
+		}
+		write_strln(";; ASM {");
+		while (!read_sym ('}'))
+		{
+			read_space ();
+			write_str ("  ");
+			while ((*src_p != 10) && (*src_p != '}'))
+			{
+				write_chr (*src_p);
+				src_p = src_p + 1;
+			}
+			write_chr (10);
+		}
+		write_strln(";; } ASM");
+	}
+	else
+	{
+		return 0;
+	}
+	return 1;
+}
+
+int parse_block()
+{
+	if (!read_sym ('{'))
+	{
+		if (!parse_keyword_block ())
+		{
+			if (!parse_statement ())
+			{
+				return 0;
+			}
+			if (!read_sym (';'))
+			{
+				return 0;
+			}
+		}
+	}
+	else
+	{
+		while (!read_sym ('}'))
+		{
+			if (!parse_keyword_block ())
+			{
+				if (!parse_statement ())
+				{
+					return 0;
+				}
+				if (!read_sym (';'))
+				{
+					return 0;
+				}
+			}
+		}
+	}
+	return 1;
+}
+
 int parse_conditional()
 {
 	char lbl[ID_SZ];
@@ -834,22 +921,9 @@ int parse_conditional()
 	write_strln (lbl);
 	write_strln ("  nzjump");
 
-	if (!read_sym ('{'))
+	if (!parse_block ())
 	{
-		if (!parse_statement ())
-		{
-			return 0;
-		}
-	}
-	else
-	{
-		while (!read_sym ('}'))
-		{
-			if (!parse_statement ())
-			{
-				return 0;
-			}
-		}
+		return 0;
 	}
 
 	if (read_sym_s ("else"))
@@ -862,17 +936,7 @@ int parse_conditional()
 		write_strln (lbl);
 		write_strln ("  nzjump");
 
-		if (read_sym ('{'))
-		{
-			while (!read_sym ('}'))
-			{
-				if (!parse_statement ())
-				{
-					return 0;
-				}
-			}
-		}
-		else if (!parse_statement ())
+		if (!parse_block ())
 		{
 			return 0;
 		}
@@ -886,6 +950,106 @@ int parse_conditional()
 		write_strln (":");
 		write_strln ("  drop");
 	}
+
+	return 1;
+}
+
+int parse_loop_for()
+{
+	char lbl1[ID_SZ];
+	char lbl2[ID_SZ];
+	char lbl3[ID_SZ];
+	char lbl4[ID_SZ];
+	char *tmp_sta = 0;
+	char *tmp_end = 0;
+
+	gen_label (lbl1);
+	gen_label (lbl2);
+	gen_label (lbl3);
+	gen_label (lbl4);
+
+	/* Remember parent loop labels if any */
+	tmp_sta = lbl_sta;
+	tmp_end = lbl_end;
+	lbl_sta = lbl1;
+	lbl_end = lbl2;
+
+	if (!read_sym ('('))
+	{
+		return 0;
+	}
+
+	/* First statement */
+	while (!read_sym (';'))
+	{
+		if (!parse_statement ())
+		{
+			return 0;
+		}
+		if (read_sym (','))
+		{
+			continue;
+		}
+	}
+
+	write_str (lbl1);
+	write_strln (":");
+
+	/* Second statement: conditional */
+	if (!parse_expr ())
+	{
+		return 0;
+	}
+	if (!read_sym (';'))
+	{
+		return 0;
+	}
+	write_strln ("  not");
+	write_str ("  pushl ");
+	write_strln (lbl4);
+	write_strln ("  nzjump");
+
+	write_str ("  pushl ");
+	write_strln (lbl3);
+	write_strln ("  jump");
+
+	write_str (lbl2);
+	write_strln (":");
+
+	/* Third statement */
+	while (!read_sym (')'))
+	{
+		if (!parse_statement ())
+		{
+			return 0;
+		}
+		if (read_sym (','))
+		{
+			continue;
+		}
+	}
+
+	write_str ("  pushl ");
+	write_strln (lbl1);
+	write_strln ("  jump");
+
+	write_str (lbl3);
+	write_strln (":");
+
+	if (!parse_block ())
+	{
+		return 0;
+	}
+
+	write_str ("  pushl ");
+	write_strln (lbl2);
+	write_strln ("  jump");
+	write_str (lbl4);
+	write_strln (":");
+
+	/* Restore parent loop break label */
+	lbl_sta = tmp_sta;
+	lbl_end = tmp_end;
 
 	return 1;
 }
@@ -929,17 +1093,7 @@ int parse_loop_while()
 	write_strln (lbl2);
 	write_strln ("  nzjump");
 
-	if (read_sym ('{'))
-	{
-		while (!read_sym ('}'))
-		{
-			if (!parse_statement ())
-			{
-				return 0;
-			}
-		}
-	}
-	else if (!parse_statement ())
+	if (!parse_block ())
 	{
 		return 0;
 	}
@@ -1006,12 +1160,7 @@ int parse_statement()
 	char id[ID_SZ];
 	char num[ID_SZ];
 
-	/* Allow for empty statement */
-	if (read_sym (';'))
-	{
-		return 1;
-	}
-	else if (read_sym ('*'))
+	if (read_sym ('*'))
 	{
 		if (!parse_operand ())
 		{
@@ -1026,7 +1175,7 @@ int parse_statement()
 			return 0;
 		}
 		write_strln ("  popi");
-		goto semicolon_end;
+		return 1;
 	}
 
 	/*
@@ -1055,24 +1204,6 @@ int parse_statement()
 		write_str (id);
 		write_strln ("_end");
 		write_strln("  jump");
-		goto semicolon_end;
-	}
-	else if (read_sym_s ("if"))
-	{
-		if (!parse_conditional ())
-		{
-			return 0;
-		}
-		/* brace or semicolon */
-		return 1;
-	}
-	else if (read_sym_s ("while"))
-	{
-		if (!parse_loop_while ())
-		{
-			return 0;
-		}
-		/* brace or semicolon */
 		return 1;
 	}
 	else if (read_sym_s ("goto"))
@@ -1085,7 +1216,7 @@ int parse_statement()
 		write_str ("  pushl __");
 		write_strln (id);
 		write_strln ("jump");
-		goto semicolon_end;
+		return 1;
 	}
 	else if (read_sym_s ("break"))
 	{
@@ -1095,7 +1226,7 @@ int parse_statement()
 			write_strln (lbl_end);
 			write_strln ("  jump");
 		}
-		goto semicolon_end;
+		return 1;
 	}
 	else if (read_sym_s ("continue"))
 	{
@@ -1105,28 +1236,6 @@ int parse_statement()
 			write_strln (lbl_sta);
 			write_strln ("  jump");
 		}
-		goto semicolon_end;
-	}
-	else if (read_sym_s ("asm"))
-	{
-		if (!read_sym ('{'))
-		{
-			error_log ("error: `{` expected");
-			return 0;
-		}
-		write_strln(";; ASM {");
-		while (!read_sym ('}'))
-		{
-			read_space ();
-			write_str ("  ");
-			while ((*src_p != 10) && (*src_p != '}'))
-			{
-				write_chr (*src_p);
-				src_p = src_p + 1;
-			}
-			write_chr (10);
-		}
-		write_strln(";; } ASM");
 		return 1;
 	}
 
@@ -1187,7 +1296,6 @@ int parse_statement()
 		}
 		write_strln ("  swap");
 		write_strln ("  popi");
-		goto semicolon_end;
 	}
 
 	/* Label */
@@ -1196,7 +1304,6 @@ int parse_statement()
 		write_str ("__");
 		write_str (id);
 		write_strln (":");
-		return 1;
 	}
 
 	/* Local array definition.
@@ -1238,8 +1345,6 @@ int parse_statement()
 		write_strln ("  pushl __memp");
 		write_strln ("  swap");
 		write_strln ("  popi");
-
-		goto semicolon_end;
 	}
 
 	else
@@ -1248,11 +1353,6 @@ int parse_statement()
 		return 0;
 	}
 
-semicolon_end:
-	if (!read_sym (';'))
-	{
-		return 0;
-	}
 	return 1;
 }
 
@@ -1322,19 +1422,17 @@ int parse_func(char* name)
 		return 1;
 	}
 
-	/* Statements */
-
+	/* Body always begins with opening curly brace */
 	if (!read_sym ('{'))
 	{
 		return 0;
 	}
+	unread_sym ();
 
-	while (!read_sym ('}'))
+	/* Function body */
+	if (!parse_block ())
 	{
-		if (!parse_statement ())
-		{
-			return 0;
-		}
+		return 0;
 	}
 
 	/* Function end label */
