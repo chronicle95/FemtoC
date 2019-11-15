@@ -921,9 +921,12 @@ int parse_conditional()
 	write_strln (lbl);
 	write_strln ("  nzjump");
 
-	if (!parse_block ())
+	if (!read_sym (';'))
 	{
-		return 0;
+		if (!parse_block ())
+		{
+			return 0;
+		}
 	}
 
 	if (read_sym_s ("else"))
@@ -936,9 +939,12 @@ int parse_conditional()
 		write_strln (lbl);
 		write_strln ("  nzjump");
 
-		if (!parse_block ())
+		if (!read_sym (';'))
 		{
-			return 0;
+			if (!parse_block ())
+			{
+				return 0;
+			}
 		}
 
 		write_str (lbl);
@@ -1036,9 +1042,12 @@ int parse_loop_for()
 	write_str (lbl3);
 	write_strln (":");
 
-	if (!parse_block ())
+	if (!read_sym (';'))
 	{
-		return 0;
+		if (!parse_block ())
+		{
+			return 0;
+		}
 	}
 
 	write_str ("  pushl ");
@@ -1093,9 +1102,12 @@ int parse_loop_while()
 	write_strln (lbl2);
 	write_strln ("  nzjump");
 
-	if (!parse_block ())
+	if (!read_sym (';'))
 	{
-		return 0;
+		if (!parse_block ())
+		{
+			return 0;
+		}
 	}
 
 	write_str ("  pushl ");
