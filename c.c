@@ -76,12 +76,8 @@ int clear_memory(char *p, int size)
 int gen_label(char *dst)
 {
 	int n = lbl_cnt;
-	*dst = '_';
-	dst = dst + 1;
-	*dst = 'L';
-	dst = dst + 1;
-	*dst = '_';
-	dst = dst + 1;
+	copy_memory (dst, "_L_", 3);
+	dst = dst + 3;
 	if (n == 0)
 	{
 		*dst = 'a';
@@ -532,6 +528,7 @@ int parse_operand()
 		}
 		else
 		{
+			error_log ("undeclared identifier");
 			return 0;
 		}
 		return 1;
@@ -806,7 +803,6 @@ int parse_expr()
 	return 1;
 }
 
-int parse_statement();
 int parse_keyword_block()
 {
 	if (read_sym_s ("if"))
@@ -834,7 +830,7 @@ int parse_keyword_block()
 	{
 		if (!read_sym ('{'))
 		{
-			error_log ("error: `{` expected");
+			error_log ("`{` expected");
 			return 0;
 		}
 		write_strln(";; ASM {");
@@ -858,6 +854,7 @@ int parse_keyword_block()
 	return 1;
 }
 
+int parse_statement();
 int parse_block()
 {
 	if (!read_sym ('{'))
