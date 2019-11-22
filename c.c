@@ -1400,6 +1400,8 @@ int parse_argslist()
 
 int parse_func(char* name)
 {
+	char *save = out_p;
+
 	/* Put function name to locals and arguments lists
 	 * so that the first entry index starts with 1 */
 	store_var (loc_p, name);
@@ -1433,6 +1435,7 @@ int parse_func(char* name)
 
 	if (read_sym (';'))
 	{
+		out_p = save;
 		return 1;
 	}
 
