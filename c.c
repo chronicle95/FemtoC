@@ -17,6 +17,12 @@
 
 #include <stdio.h>
 
+/* Explicit declarations */
+int parse_statement();
+int parse_loop_for();
+int parse_loop_while();
+int parse_conditional();
+
 /* Global variables: Limits */
 int ID_SZ = 24;     /* maximum identifier length */
 int SRC_SZ = 32000; /* up to ~2000 lines of C source code */
@@ -854,7 +860,6 @@ int parse_keyword_block()
 	return 1;
 }
 
-int parse_statement();
 int parse_block()
 {
 	if (!read_sym ('{'))
