@@ -53,6 +53,7 @@ char* gbl_p = 0; /* global variable list.
 int lbl_cnt = 0;   /* Label counter. Used for temporary labels */
 char* lbl_sta = 0; /* Nearest loop start label */
 char* lbl_end = 0; /* Nearest loop end label */
+int arch = 0;      /* Output type: 0 - default, 1 - GAS (Linux/x86) */
 
 /* Utility functions */
 
@@ -306,16 +307,6 @@ int read_space()
 		{
 			src_p = src_p + 1;
 		}
-		/* Ignore preprocessor
-		 * TBD: implement include
-		 */
-		else if (*src_p == '#')
-		{
-			while (*src_p && (*src_p != 10))
-			{
-				src_p = src_p + 1;
-			}
-		}
 		else
 		{
 			break;
@@ -402,6 +393,18 @@ int read_id(char* dst)
 	}
 
 	return 1;
+}
+
+int read_id_pp(char *dst)
+{
+	read_space ();
+	if (*src_p == '#')
+	{
+		*dst = *src_p;
+		dst = dst + 1;
+		src_p = src_p + 1;
+	}
+	return read_id(dst);
 }
 
 int read_number(char* dst)
@@ -1475,23 +1478,67 @@ int parse_func(char* name)
 	return 1;
 }
 
+int parse_preprocessor(char *ppname)
+{
+	char atype[ID_SZ];
+	if (strcomp (ppname, "include"))
+	{
+		/* Not supported for now */
+	}
+	else if (strcomp (ppname, "define"))
+	{
+		/* Not supported for now */
+	}
+	else if (strcomp (ppname, "arch"))
+	{
+		if (!read_id (atype))
+		{
+			error_log ("invalid output architecture");
+			return 0;
+		}
+		if (strcomp (atype, "default"))
+		{
+			arch = 0;
+		}
+		else if (strcomp (atype, "gas"))
+		{
+			arch = 1;
+		}
+		else
+		{
+			error_log ("unsupported arch. use: default,gas");
+			return 0;
+		}
+	}
+	else
+	{
+		error_log ("unsupported preprocessor. use: include,define,arch");
+		return 0;
+	}
+	/* Find new line */
+	while (*src_p && (*src_p != 10))
+	{
+		src_p = src_p + 1;
+	}
+	return 1;
+}
+
 int parse_root()
 {
 	char id[ID_SZ];
-	write_strln ("  pushl __memp");
-	write_strln ("  pushl __the_end");
-	write_strln ("  popi");
-	write_strln ("  pushl main");
-	write_strln ("  call");
-	write_strln ("  halt");
-	write_strln ("__retval:");
-	write_strln (" .word 0");
-	write_strln ("__memp:");
-	write_strln (" .word 0");
 	/* Read identifier as a basis for any
 	 * statement within the program's root. */
-	while (read_id (id))
+	while (read_id_pp (id))
 	{
+		/* Preprocessor */
+		if (*id == '#')
+		{
+			if (!parse_preprocessor(id + 1))
+			{
+				break;
+			}
+			continue;
+		}
 		/* A function declaration */
 		if (read_sym ('('))
 		{
@@ -1525,6 +1572,29 @@ int parse_root()
 	/* At this moment we always return 1
 	 * with no error checks */
 	return 1;
+}
+
+/* Code generation functions */
+int gen_start()
+{
+	if (arch == 0)
+	{
+		puts (";; Generated with FemtoC");
+		puts ("  pushl __memp");
+		puts ("  pushl __the_end");
+		puts ("  popi");
+		puts ("  pushl main");
+		puts ("  call");
+		puts ("  halt");
+		puts ("__retval:");
+		puts (" .word 0");
+		puts ("__memp:");
+		puts (" .word 0");
+	}
+	else
+	{
+		/* TODO: for GNU Assembler */
+	}
 }
 
 /* Entry point */
@@ -1571,7 +1641,7 @@ int main()
 
 	parse_root ();
 
-	puts (";; Generated with FemtoC");
+	gen_start ();
 	puts (result);
 	if (!*src_p)
 	{
