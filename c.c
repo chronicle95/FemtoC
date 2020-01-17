@@ -398,29 +398,156 @@ int read_id(char* dst)
 int read_id_pp(char *dst)
 {
 	read_space ();
+
 	if (*src_p == '#')
 	{
 		*dst = *src_p;
 		dst = dst + 1;
 		src_p = src_p + 1;
 	}
+
 	return read_id(dst);
 }
 
 int read_number(char* dst)
 {
 	read_space ();
+
 	if (!is_digit (*src_p))
 	{
 		return 0;
 	}
+
 	while (is_digit (*src_p))
 	{
 		*dst = *src_p;
 		dst = dst + 1;
 		src_p = src_p + 1;
 	}
+
 	*dst = 0;
+	return 1;
+}
+
+/* Code generation functions */
+
+int gen_cmd_swap()
+{
+	if (arch == 0)
+	{
+		write_strln ("  swap");
+	}
+	else
+	{
+		/* TODO: for GNU Assembler */
+	}
+
+	return 1;
+}
+
+int gen_cmd_call(char *name)
+{
+	if (arch == 0)
+	{
+		write_str ("  pushl ");
+		write_strln (name);
+		write_strln ("  call");
+	}
+	else
+	{
+		/* TODO: for GNU Assembler */
+	}
+
+	return 1;
+}
+
+int gen_cmd_jump(char *name)
+{
+	if (arch == 0)
+	{
+		write_str ("  pushl ");
+		write_strln (name);
+		write_strln ("  jump");
+	}
+	else
+	{
+		/* TODO: for GNU Assembler */
+	}
+
+	return 1;
+}
+
+int gen_cmd_nzjump(char *name)
+{
+	if (arch == 0)
+	{
+		write_str ("  pushl ");
+		write_strln (name);
+		write_strln ("  nzjump");
+	}
+	else
+	{
+		/* TODO: for GNU Assembler */
+	}
+
+	return 1;
+}
+
+int gen_cmd_push_static(char *name)
+{
+	if (arch == 0)
+	{
+		write_str ("  pushl ");
+		write_strln (name);
+		write_strln ("  pushi");
+	}
+	else
+	{
+		/* TODO: for GNU Assembler */
+	}
+
+	return 1;
+}
+
+int gen_cmd_pop_static(char *name)
+{
+	if (arch == 0)
+	{
+		write_str ("  pushl ");
+		write_strln (name);
+		write_strln ("  swap");
+		write_strln ("  popi");
+	}
+	else
+	{
+		/* TODO: for GNU Assembler */
+	}
+
+	return 1;
+}
+
+int gen_start()
+{
+	/* Use `puts` here instead of all `gen_cmd_*` stuff */
+	if (arch == 0)
+	{
+		puts (";; Generated with FemtoC");
+		puts ("  pushl __memp");
+		puts ("  pushl __the_end");
+		puts ("  popi");
+		puts ("  pushl main");
+		puts ("  call");
+		puts ("  halt");
+		puts ("__retval:");
+		puts (" .word 0");
+		puts ("__memp:");
+		puts (" .word 0");
+	}
+	else
+	{
+		/* TODO: for GNU Assembler */
+	}
+
 	return 1;
 }
 
@@ -463,7 +590,7 @@ int parse_invoke(char *name)
 	{
 		if (argcnt == 2)
 		{
-			write_strln ("  swap");
+			gen_cmd_swap ();
 		}
 		else
 		{
@@ -482,9 +609,7 @@ int parse_invoke(char *name)
 	}
 
 	/* Call the subroutine */
-	write_str ("  pushl ");
-	write_strln (name);
-	write_strln ("  call");
+	gen_cmd_call (name);
 
 	/* Drop the arguments */
 	n = 0;
@@ -569,9 +694,7 @@ int parse_operand()
 	{
 		gen_label (buf);
 		gen_label (lbl);
-		write_str ("  pushl ");
-		write_strln (buf);
-		write_strln ("  jump");
+		gen_cmd_jump (buf);
 		write_str (lbl);
 		write_strln (":");
 		write_str (" .word");
@@ -608,8 +731,7 @@ int parse_operand()
 			{
 				return 0;
 			}
-			write_strln ("  pushl __retval");
-			write_strln ("  pushi");
+			gen_cmd_push_static ("__retval");
 		}
 		else
 		{
@@ -631,9 +753,7 @@ int parse_operand()
 			}
 			else if (find_var (gbl_p, buf, &idx))
 			{
-				write_str ("  pushl ");
-				write_strln (buf);
-				write_strln ("  pushi");
+				gen_cmd_push_static (buf);
 			}
 			else
 			{
@@ -765,7 +885,7 @@ int parse_expr()
 					return 0;
 				}
 				write_strln ("  not");
-				write_strln ("  swap");
+				gen_cmd_swap ();
 				write_strln ("  not");
 				write_strln ("  or");
 				write_strln ("  not");
@@ -788,7 +908,7 @@ int parse_expr()
 					return 0;
 				}
 				write_strln ("  not");
-				write_strln ("  swap");
+				gen_cmd_swap ();
 				write_strln ("  not");
 				write_strln ("  and");
 				write_strln ("  not");
@@ -922,9 +1042,7 @@ int parse_conditional()
 
 	write_strln ("  dup");
 	write_strln ("  not");
-	write_str ("  pushl ");
-	write_strln (lbl);
-	write_strln ("  nzjump");
+	gen_cmd_nzjump (lbl);
 
 	if (!read_sym (';'))
 	{
@@ -940,9 +1058,7 @@ int parse_conditional()
 		write_strln (":");
 
 		gen_label (lbl);
-		write_str ("  pushl ");
-		write_strln (lbl);
-		write_strln ("  nzjump");
+		gen_cmd_nzjump (lbl);
 
 		if (!read_sym (';'))
 		{
@@ -1016,13 +1132,9 @@ int parse_loop_for()
 		return 0;
 	}
 	write_strln ("  not");
-	write_str ("  pushl ");
-	write_strln (lbl4);
-	write_strln ("  nzjump");
+	gen_cmd_nzjump (lbl4);
 
-	write_str ("  pushl ");
-	write_strln (lbl3);
-	write_strln ("  jump");
+	gen_cmd_jump (lbl3);
 
 	write_str (lbl2);
 	write_strln (":");
@@ -1040,9 +1152,7 @@ int parse_loop_for()
 		}
 	}
 
-	write_str ("  pushl ");
-	write_strln (lbl1);
-	write_strln ("  jump");
+	gen_cmd_jump (lbl1);
 
 	write_str (lbl3);
 	write_strln (":");
@@ -1055,9 +1165,7 @@ int parse_loop_for()
 		}
 	}
 
-	write_str ("  pushl ");
-	write_strln (lbl2);
-	write_strln ("  jump");
+	gen_cmd_jump (lbl2);
 	write_str (lbl4);
 	write_strln (":");
 
@@ -1103,9 +1211,7 @@ int parse_loop_while()
 	}
 
 	write_strln ("  not");
-	write_str ("  pushl ");
-	write_strln (lbl2);
-	write_strln ("  nzjump");
+	gen_cmd_nzjump (lbl2);
 
 	if (!read_sym (';'))
 	{
@@ -1115,9 +1221,7 @@ int parse_loop_while()
 		}
 	}
 
-	write_str ("  pushl ");
-	write_strln (lbl1);
-	write_strln ("  jump");
+	gen_cmd_jump (lbl1);
 	write_str (lbl2);
 	write_strln (":");
 
@@ -1206,9 +1310,7 @@ int parse_statement()
 			return 0;
 		}
 		/* save it */
-		write_strln ("  pushl __retval");
-		write_strln ("  swap");
-		write_strln ("  popi");
+		gen_cmd_pop_static ("__retval");
 		/* jump to end of function */
 		idx = 0;
 		while (*(loc_p + idx) != ' ')
@@ -1239,9 +1341,7 @@ int parse_statement()
 	{
 		if (lbl_end)
 		{
-			write_str ("  pushl ");
-			write_strln (lbl_end);
-			write_strln ("  jump");
+			gen_cmd_jump (lbl_end);
 		}
 		return 1;
 	}
@@ -1249,9 +1349,7 @@ int parse_statement()
 	{
 		if (lbl_sta)
 		{
-			write_str ("  pushl ");
-			write_strln (lbl_sta);
-			write_strln ("  jump");
+			gen_cmd_jump (lbl_sta);
 		}
 		return 1;
 	}
@@ -1311,7 +1409,7 @@ int parse_statement()
 			write_numln (idx);
 			write_strln ("  sub");
 		}
-		write_strln ("  swap");
+		gen_cmd_swap ();
 		write_strln ("  popi");
 	}
 
@@ -1341,8 +1439,7 @@ int parse_statement()
 		{
 			return 0;
 		}
-		write_strln ("  pushl __memp");
-		write_strln ("  pushi");
+		gen_cmd_push_static ("__memp");
 		write_strln ("  dup");
 
 		store_var (loc_p, id);
@@ -1359,9 +1456,7 @@ int parse_statement()
 
 		/* Allocate memory for the array */
 		write_strln ("  add");
-		write_strln ("  pushl __memp");
-		write_strln ("  swap");
-		write_strln ("  popi");
+		gen_cmd_pop_static ("__memp");
 	}
 
 	else
@@ -1418,8 +1513,7 @@ int parse_func(char* name)
 	write_strln (":");
 
 	/* Save allocation pointer on stack */
-	write_strln ("  pushl __memp");
-	write_strln ("  pushi");
+	gen_cmd_push_static ("__memp");
 	/* ..and reserve dummy local variable with index 1 */
 	store_var (loc_p, "?");
 
@@ -1572,29 +1666,6 @@ int parse_root()
 	/* At this moment we always return 1
 	 * with no error checks */
 	return 1;
-}
-
-/* Code generation functions */
-int gen_start()
-{
-	if (arch == 0)
-	{
-		puts (";; Generated with FemtoC");
-		puts ("  pushl __memp");
-		puts ("  pushl __the_end");
-		puts ("  popi");
-		puts ("  pushl main");
-		puts ("  call");
-		puts ("  halt");
-		puts ("__retval:");
-		puts (" .word 0");
-		puts ("__memp:");
-		puts (" .word 0");
-	}
-	else
-	{
-		/* TODO: for GNU Assembler */
-	}
 }
 
 /* Entry point */
