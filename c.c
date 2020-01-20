@@ -445,6 +445,20 @@ int gen_cmd_swap()
 	return 1;
 }
 
+int gen_cmd_pushl(char *name)
+{
+	if (arch == 0)
+	{
+		write_str ("  pushl ");
+		write_strln (name);
+	}
+	else
+	{
+		/* TODO: for GNU Assembler */
+	}
+	return 1;
+}
+
 int gen_cmd_call(char *name)
 {
 	if (arch == 0)
@@ -523,6 +537,13 @@ int gen_cmd_pop_static(char *name)
 		/* TODO: for GNU Assembler */
 	}
 
+	return 1;
+}
+
+int gen_cmd_label(char *name)
+{
+	write_str (name);
+	write_strln (":");
 	return 1;
 }
 
@@ -657,8 +678,7 @@ int parse_operand()
 		}
 		else if (find_var (gbl_p, buf, &idx))
 		{
-			write_str ("  pushl ");
-			write_strln (buf);
+			gen_cmd_pushl (buf);
 		}
 		else
 		{
@@ -695,15 +715,12 @@ int parse_operand()
 		gen_label (buf);
 		gen_label (lbl);
 		gen_cmd_jump (buf);
-		write_str (lbl);
-		write_strln (":");
+		gen_cmd_label (lbl);
 		write_str (" .word");
 		read_str_const ();
 		write_strln (" 0");
-		write_str (buf);
-		write_strln (":");
-		write_str ("  pushl ");
-		write_strln (lbl);
+		gen_cmd_label (buf);
+		gen_cmd_pushl (lbl);
 		return 1;
 	}
 	else if (read_sym (39))
@@ -1054,8 +1071,7 @@ int parse_conditional()
 
 	if (read_sym_s ("else"))
 	{
-		write_str (lbl);
-		write_strln (":");
+		gen_cmd_label (lbl);
 
 		gen_label (lbl);
 		gen_cmd_nzjump (lbl);
@@ -1068,13 +1084,11 @@ int parse_conditional()
 			}
 		}
 
-		write_str (lbl);
-		write_strln (":");
+		gen_cmd_label (lbl);
 	}
 	else
 	{
-		write_str (lbl);
-		write_strln (":");
+		gen_cmd_label (lbl);
 		write_strln ("  drop");
 	}
 
@@ -1119,8 +1133,7 @@ int parse_loop_for()
 		}
 	}
 
-	write_str (lbl1);
-	write_strln (":");
+	gen_cmd_label (lbl1);
 
 	/* Second statement: conditional */
 	if (!parse_expr ())
@@ -1136,8 +1149,7 @@ int parse_loop_for()
 
 	gen_cmd_jump (lbl3);
 
-	write_str (lbl2);
-	write_strln (":");
+	gen_cmd_label (lbl2);
 
 	/* Third statement */
 	while (!read_sym (')'))
@@ -1154,8 +1166,7 @@ int parse_loop_for()
 
 	gen_cmd_jump (lbl1);
 
-	write_str (lbl3);
-	write_strln (":");
+	gen_cmd_label (lbl3);
 
 	if (!read_sym (';'))
 	{
@@ -1166,8 +1177,7 @@ int parse_loop_for()
 	}
 
 	gen_cmd_jump (lbl2);
-	write_str (lbl4);
-	write_strln (":");
+	gen_cmd_label (lbl4);
 
 	/* Restore parent loop break label */
 	lbl_sta = tmp_sta;
@@ -1197,8 +1207,7 @@ int parse_loop_while()
 		return 0;
 	}
 
-	write_str (lbl1);
-	write_strln (":");
+	gen_cmd_label (lbl1);
 
 	if (!parse_expr ())
 	{
@@ -1222,8 +1231,7 @@ int parse_loop_while()
 	}
 
 	gen_cmd_jump (lbl1);
-	write_str (lbl2);
-	write_strln (":");
+	gen_cmd_label (lbl2);
 
 	/* Restore parent loop break label */
 	lbl_sta = tmp_sta;
@@ -1244,8 +1252,7 @@ int parse_gvar(char* name)
 	{
 		return 0;
 	}
-	write_str (name);
-	write_strln (":");
+	gen_cmd_label (name);
 	write_str (" .word ");
 	write_strln (num);
 	store_var (gbl_p, name);
@@ -1267,8 +1274,7 @@ int parse_garr(char* name)
 	{
 		return 0;
 	}
-	write_str (name);
-	write_strln (":");
+	gen_cmd_label (name);
 	write_str (" .zero ");
 	write_strln (num);
 	store_var (gbl_p, name);
@@ -1391,8 +1397,7 @@ int parse_statement()
 		}
 		else if (find_var (gbl_p, id, &idx))
 		{
-			write_str ("  pushl ");
-			write_strln (id);
+			gen_cmd_pushl (id);
 		}
 		else
 		{
@@ -1451,7 +1456,7 @@ int parse_statement()
 		write_strln ("  sub");
 
 		/* Initialize the array pointer */
-		write_strln ("  swap");
+		gen_cmd_swap ();
 		write_strln ("  popi");
 
 		/* Allocate memory for the array */
@@ -1555,7 +1560,7 @@ int parse_func(char* name)
 	write_strln ("_end:");
 
 	/* Release allocated memory (if any) */
-	write_strln ("  pushl __memp");
+	gen_cmd_pushl ("__memp");
 	write_strln ("  pushsf");
 	write_strln ("  push 1");
 	write_strln ("  sub");
@@ -1662,7 +1667,7 @@ int parse_root()
 			break;
 		}
 	}
-	write_strln ("__the_end:");
+	gen_cmd_label ("__the_end");
 	/* At this moment we always return 1
 	 * with no error checks */
 	return 1;
