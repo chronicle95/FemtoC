@@ -972,7 +972,7 @@ int parse_keyword_block()
 			return 0;
 		}
 	}
-	else if (read_sym_s ("asm"))
+	else if (read_sym_s ("__def_asm"))
 	{
 		if (!read_sym ('{'))
 		{
@@ -983,15 +983,54 @@ int parse_keyword_block()
 		while (!read_sym ('}'))
 		{
 			read_space ();
-			write_str ("  ");
+			if (arch == 0)
+			{
+				write_str ("  ");
+			}
 			while ((*src_p != 10) && (*src_p != '}'))
 			{
-				write_chr (*src_p);
+				if (arch == 0)
+				{
+					write_chr (*src_p);
+				}
 				src_p = src_p + 1;
 			}
-			write_chr (10);
+			if (arch == 0)
+			{
+				write_chr (10);
+			}
 		}
 		write_strln(";; } ASM");
+	}
+	else if (read_sym_s ("__gnu_asm"))
+	{
+		if (!read_sym ('{'))
+		{
+			error_log ("`{` expected");
+			return 0;
+		}
+		write_strln(";; GNU ASM {");
+		while (!read_sym ('}'))
+		{
+			read_space ();
+			if (arch == 1)
+			{
+				write_str ("  ");
+			}
+			while ((*src_p != 10) && (*src_p != '}'))
+			{
+				if (arch == 1)
+				{
+					write_chr (*src_p);
+				}
+				src_p = src_p + 1;
+			}
+			if (arch == 1)
+			{
+				write_chr (10);
+			}
+		}
+		write_strln(";; } GNU ASM");
 	}
 	else
 	{

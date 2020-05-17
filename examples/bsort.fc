@@ -2,7 +2,7 @@
 
 char getchar ()
 {
-	asm
+	__def_asm
 	{
 	  pushl __retval
 	  input
@@ -12,7 +12,7 @@ char getchar ()
 
 int putchar (char c)
 {
-	asm
+	__def_asm
 	{
 	  pushsf
 	  push 1
