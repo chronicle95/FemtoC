@@ -17,14 +17,14 @@
 
 #include <stdio.h>
 
-/* Explicit declarations */
+/* Procedure declarations */
 int parse_statement();
 int parse_loop_for();
 int parse_loop_while();
 int parse_conditional();
 
 /* Global variables: Limits */
-int ID_SZ = 24;     /* maximum identifier length */
+int ID_SZ = 32;     /* maximum identifier length */
 int SRC_SZ = 32000; /* up to ~2000 lines of C source code */
 int OUT_SZ = 65000; /* up to ~5500 lines of assembly output */
 int LOC_SZ = 800;   /* up to 32 local variables */

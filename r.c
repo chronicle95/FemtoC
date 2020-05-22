@@ -10,7 +10,7 @@ typedef unsigned short TYPE;
 
 #define BUF_SZ	65535 
 #define SF_SZ	64
-#define ID_SZ	24
+#define ID_SZ	32
 #define LBL_CNT	1000
 
 #define OP_NOP    0
