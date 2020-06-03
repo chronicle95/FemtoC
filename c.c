@@ -439,7 +439,10 @@ int gen_cmd_swap()
 	}
 	else
 	{
-		/* TODO: for GNU Assembler */
+		write_strln ("  pop %rax");
+		write_strln ("  pop %rbx");
+		write_strln ("  push %rax");
+		write_strln ("  push %rbx");
 	}
 
 	return 1;
@@ -454,7 +457,10 @@ int gen_cmd_pushl(char *name)
 	}
 	else
 	{
-		/* TODO: for GNU Assembler */
+		write_str ("  leaq ");
+		write_str (name);
+		write_strln ("(%rip), %rax");
+		write_strln ("  push %rax");
 	}
 	return 1;
 }
@@ -469,7 +475,8 @@ int gen_cmd_call(char *name)
 	}
 	else
 	{
-		/* TODO: for GNU Assembler */
+		write_str ("  call ");
+		write_strln (name);
 	}
 
 	return 1;
@@ -485,7 +492,8 @@ int gen_cmd_jump(char *name)
 	}
 	else
 	{
-		/* TODO: for GNU Assembler */
+		write_str ("  jmp ");
+		write_strln (name);
 	}
 
 	return 1;
@@ -501,7 +509,10 @@ int gen_cmd_nzjump(char *name)
 	}
 	else
 	{
-		/* TODO: for GNU Assembler */
+		write_strln ("  pop %rax");
+		write_strln ("  cmp %rax, $0");
+		write_str ("  jne ");
+		write_strln (name);
 	}
 
 	return 1;
@@ -517,7 +528,10 @@ int gen_cmd_push_static(char *name)
 	}
 	else
 	{
-		/* TODO: for GNU Assembler */
+		write_str ("  movq ");
+		write_str (name);
+		write_strln ("(%rip), %rax");
+		write_strln ("  push %rax");
 	}
 
 	return 1;
@@ -534,7 +548,10 @@ int gen_cmd_pop_static(char *name)
 	}
 	else
 	{
-		/* TODO: for GNU Assembler */
+		write_strln ("  pop %rax");
+		write_str ("  movq %rax, ");
+		write_str (name);
+		write_strln ("(%rip)");
 	}
 
 	return 1;
@@ -550,9 +567,10 @@ int gen_cmd_label(char *name)
 int gen_start()
 {
 	/* Use `puts` here instead of all `gen_cmd_*` stuff */
+	puts (";; Generated with FemtoC");
 	if (arch == 0)
 	{
-		puts (";; Generated with FemtoC");
+		puts (";; Reference runtime [RP]");
 		puts ("  pushl __memp");
 		puts ("  pushl __the_end");
 		puts ("  popi");
@@ -566,7 +584,14 @@ int gen_start()
 	}
 	else
 	{
-		/* TODO: for GNU Assembler */
+		puts (";; GNU Assembler listing [x86_64]");
+		puts (" .data");
+		puts (" .globl __memp");
+		puts (" .align 8");
+		puts (" .type __memp, @object");
+		puts (" .size __memp, 8");
+		puts ("__memp:");
+		puts (" .quad __the_end");
 	}
 
 	return 1;
@@ -621,8 +646,8 @@ int parse_invoke(char *name)
 			while (n < argcnt)
 			{
 				copy_memory ((len - (*(argpos + n + 1) - *(argpos))) + *(argpos),
-					*(argpos + n) + len,
-					*(argpos + n + 1) - *(argpos + n));
+						*(argpos + n) + len,
+						*(argpos + n + 1) - *(argpos + n));
 				n = n + 1;
 			}
 			clear_memory (*(argpos) + len, len);
