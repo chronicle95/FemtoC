@@ -564,6 +564,74 @@ int gen_cmd_label(char *name)
 	return 1;
 }
 
+int gen_cmd_not()
+{
+	if (arch == 0)
+	{
+		write_strln ("  not");
+	}
+	else
+	{
+		write_strln ("  pop %rax");
+		write_strln ("  xor %rax, %rax");
+		write_strln ("  test %edi, %edi");
+		write_strln ("  sete %al");
+		write_strln ("  push %rax");
+	}
+
+	return 1;
+}
+
+int gen_cmd_and()
+{
+	if (arch == 0)
+	{
+		write_strln ("  and");
+	}
+	else
+	{
+		write_strln ("  pop %rax");
+		write_strln ("  pop %rbx");
+		write_strln ("  and %rbx, %rax");
+		write_strln ("  push %rax");
+	}
+
+	return 1;
+}
+
+int gen_cmd_or()
+{
+	if (arch == 0)
+	{
+		write_strln ("  or");
+	}
+	else
+	{
+		write_strln ("  pop %rax");
+		write_strln ("  pop %rbx");
+		write_strln ("  or %rbx, %rax");
+		write_strln ("  push %rax");
+	}
+
+	return 1;
+}
+
+int gen_cmd_dup()
+{
+	if (arch == 0)
+	{
+		write_strln ("  dup");
+	}
+	else
+	{
+		write_strln ("  pop %rax");
+		write_strln ("  push %rax");
+		write_strln ("  push %rax");
+	}
+
+	return 1;
+}
+
 int gen_start()
 {
 	/* Use `puts` here instead of all `gen_cmd_*` stuff */
@@ -677,7 +745,7 @@ int parse_operand()
 	{
 		if (parse_operand())
 		{
-			write_strln ("  not");
+			gen_cmd_not ();
 			return 1;
 		}
 	}
@@ -926,11 +994,11 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("  not");
+				gen_cmd_not ();
 				gen_cmd_swap ();
-				write_strln ("  not");
-				write_strln ("  or");
-				write_strln ("  not");
+				gen_cmd_not ();
+				gen_cmd_or ();
+				gen_cmd_not ();
 			}
 			else
 			{
@@ -938,7 +1006,7 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("  and");
+				gen_cmd_and ();
 			}
 		}
 		else if (read_sym ('|'))
@@ -949,11 +1017,11 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("  not");
+				gen_cmd_not ();
 				gen_cmd_swap ();
-				write_strln ("  not");
-				write_strln ("  and");
-				write_strln ("  not");
+				gen_cmd_not ();
+				gen_cmd_and ();
+				gen_cmd_not ();
 			}
 			else
 			{
@@ -961,7 +1029,7 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("  or");
+				gen_cmd_or ();
 			}
 		}
 		else
@@ -1121,8 +1189,8 @@ int parse_conditional()
 		return 0;
 	}
 
-	write_strln ("  dup");
-	write_strln ("  not");
+	gen_cmd_dup ();
+	gen_cmd_not ();
 	gen_cmd_nzjump (lbl);
 
 	if (!read_sym (';'))
@@ -1208,7 +1276,7 @@ int parse_loop_for()
 	{
 		return 0;
 	}
-	write_strln ("  not");
+	gen_cmd_not ();
 	gen_cmd_nzjump (lbl4);
 
 	gen_cmd_jump (lbl3);
@@ -1283,7 +1351,7 @@ int parse_loop_while()
 		return 0;
 	}
 
-	write_strln ("  not");
+	gen_cmd_not ();
 	gen_cmd_nzjump (lbl2);
 
 	if (!read_sym (';'))
@@ -1468,7 +1536,7 @@ int parse_statement()
 			/* In a case of new allocation we need to provide
 			 * space on stack for it so that we a have a place
 			 * to store the value */
-			write_strln ("  dup");
+			gen_cmd_dup ();
 
 			/* Allocate and point */
 			store_var (loc_p, id);
@@ -1509,7 +1577,7 @@ int parse_statement()
 			return 0;
 		}
 		gen_cmd_push_static ("__memp");
-		write_strln ("  dup");
+		gen_cmd_dup ();
 
 		store_var (loc_p, id);
 		find_var (loc_p, id, &idx);
