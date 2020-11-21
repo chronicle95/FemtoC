@@ -360,6 +360,7 @@ int read_str_const()
 	{
 		write_str (" ");
 		write_num (*src_p);
+		write_str (",");
 		src_p = src_p + 1;
 	}
 	src_p = src_p + 1;
@@ -440,6 +441,24 @@ int gen_cmd_swap()
 	return 1;
 }
 
+int gen_cmd_pushns(char *value)
+{
+	write_str ("  movq ");
+	write_str (value);
+	write_strln (", %rax");
+	write_strln ("  push %rax");
+	return 1;
+}
+
+int gen_cmd_pushni(int value)
+{
+	write_str ("  movq ");
+	write_num (value);
+	write_strln (", %rax");
+	write_strln ("  push %rax");
+	return 1;
+}
+
 int gen_cmd_pushl(char *name)
 {
 	write_str ("  leaq ");
@@ -449,17 +468,79 @@ int gen_cmd_pushl(char *name)
 	return 1;
 }
 
+int gen_cmd_pushi()
+{
+	write_strln ("  pop %rax");
+	write_strln ("  movq (%rax), %rax");
+	write_strln ("  push %rax");
+	return 1;
+}
+
+int gen_cmd_popi()
+{
+	write_strln ("  pop %rax");
+	write_strln ("  pop %rbx");
+	write_strln ("  movq %rax, (%rbx)");
+	return 1;
+}
+
+int gen_cmd_inv()
+{
+	write_strln ("  pop %rax");
+	write_strln ("  xor $ffffffffffffffff, %rax");
+	write_strln ("  push %rax");
+	return 1;
+}
+
+int gen_cmd_add()
+{
+	write_strln ("  pop %rax");
+	write_strln ("  pop %rbx");
+	write_strln ("  add %rsp, %rsp");
+	write_strln ("  push %rax");
+	return 1;
+}
+
+int gen_cmd_sub()
+{
+	write_strln ("  pop %rbx");
+	write_strln ("  pop %rax");
+	write_strln ("  sub %rbx, %rax");
+	write_strln ("  push %rax");
+	return 1;
+}
+
 int gen_cmd_call(char *name)
 {
+	/* Save old base to stack, set a new base */
+	write_strln ("  push %rbp");
+	write_strln ("  movq %rsp, %rbp");
 	write_str ("  call ");
 	write_strln (name);
+	/* Restore old base from stack */
+	write_strln ("  pop %rbp");
+	write_strln ("  movq %rbp, %rsp");
 	return 1;
+}
+
+int gen_cmd_pushsf()
+{
+	write_strln ("  push %rbp");
 }
 
 int gen_cmd_jump(char *name)
 {
 	write_str ("  jmp ");
 	write_strln (name);
+	return 1;
+}
+
+int gen_cmd_jump_x(char *prefix, char *name, char *suffix)
+{
+	write_str ("  jmp ");
+	write_str (prefix);
+	write_str (name);
+	write_strln (suffix);
 	return 1;
 }
 
@@ -490,18 +571,24 @@ int gen_cmd_pop_static(char *name)
 	return 1;
 }
 
-int gen_cmd_label(char *name)
+int gen_cmd_label_x(char *prefix, char *name, char *suffix)
 {
+	write_str (prefix);
 	write_str (name);
+	write_str (suffix);
 	write_strln (":");
 	return 1;
+}
+
+int gen_cmd_label(char *name)
+{
+	return gen_cmd_label_x("", name, "");
 }
 
 int gen_cmd_not()
 {
 	write_strln ("  pop %rax");
-	write_strln ("  xor %rax, %rax");
-	write_strln ("  test %edi, %edi");
+	write_strln ("  or %rax, %rax");
 	write_strln ("  sete %al");
 	write_strln ("  push %rax");
 	return 1;
@@ -545,12 +632,23 @@ int gen_start()
 	puts (";; Generated with FemtoC");
 	puts (";; GNU Assembler [as, x86_64]");
 	puts (" .data");
-	puts (" .globl __memp");
-	puts (" .align 8");
-	puts (" .type __memp, @object");
-	puts (" .size __memp, 8");
-	puts ("__memp:");
-	puts (" .quad __the_end");
+	puts ("__mema:");
+	puts (" .space $1000000");
+	puts ("__mema_end:");
+
+	/* Initialize data and stack pointers */
+	puts (" .text");
+	puts ("  leaq __mema(%rip), %rdi");
+	puts ("  leaq __mema_end-8(%rip), %rsp");
+	puts ("  movq %rsp, %rbp");
+
+	/* Call main() */
+	puts ("  call main");
+
+	/* Call exit(0) */
+	puts ("  movq $60, %rax");
+	puts ("  xor %rdi, %rdi");
+	puts ("  syscall");
 	return 1;
 }
 
@@ -646,17 +744,18 @@ int parse_operand()
 		}
 		if (find_var (loc_p, buf, &idx))
 		{
-			write_strln ("  pushsf");
-			write_str ("  push ");
-			write_numln (idx);
-			write_strln ("  sub");
+			gen_cmd_pushsf ();
+			gen_cmd_pushni (idx);
+			gen_cmd_sub ();
+			/* account for ret addr: */
+			gen_cmd_pushni (1);
+			gen_cmd_sub ();
 		}
 		else if (find_var (arg_p, buf, &idx))
 		{
-			write_strln ("  pushsf");
-			write_str ("  push ");
-			write_numln (idx);
-			write_strln ("  add");
+			gen_cmd_pushsf ();
+			gen_cmd_pushni (idx);
+			gen_cmd_add ();
 		}
 		else if (find_var (gbl_p, buf, &idx))
 		{
@@ -673,7 +772,7 @@ int parse_operand()
 	{
 		if (parse_operand())
 		{
-			write_strln ("  inv");
+			gen_cmd_inv ();
 			return 1;
 		}
 	}
@@ -681,7 +780,7 @@ int parse_operand()
 	{
 		if (parse_operand())
 		{
-			write_strln ("  pushi");
+			gen_cmd_pushi ();
 			return 1;
 		}
 	}
@@ -698,7 +797,7 @@ int parse_operand()
 		gen_label (lbl);
 		gen_cmd_jump (buf);
 		gen_cmd_label (lbl);
-		write_str (" .word");
+		write_str (" .quad");
 		read_str_const ();
 		write_strln (" 0");
 		gen_cmd_label (buf);
@@ -707,8 +806,7 @@ int parse_operand()
 	}
 	else if (read_sym (39))
 	{
-		write_str ("  push ");
-		write_numln (*src_p);
+		gen_cmd_pushni (*src_p);
 		src_p = src_p + 1;
 		if (!read_sym (39))
 		{
@@ -718,8 +816,7 @@ int parse_operand()
 	}
 	else if (read_number (buf))
 	{
-		write_str ("  push ");
-		write_strln (buf);
+		gen_cmd_pushns (buf);
 		return 1;
 	}
 	else if (read_id (buf))
@@ -730,25 +827,23 @@ int parse_operand()
 			{
 				return 0;
 			}
-			gen_cmd_push_static ("__retval");
+			write_strln ("  push %rax");
 		}
 		else
 		{
 			if (find_var (loc_p, buf, &idx))
 			{
-				write_strln ("  pushsf");
-				write_str ("  push ");
-				write_numln (idx);
-				write_strln ("  sub");
-				write_strln ("  pushi");
+				gen_cmd_pushsf ();
+				gen_cmd_pushni (idx);
+				gen_cmd_sub ();
+				gen_cmd_pushi ();
 			}
 			else if (find_var (arg_p, buf, &idx))
 			{
-				write_strln ("  pushsf");
-				write_str ("  push ");
-				write_numln (idx);
-				write_strln ("  add");
-				write_strln ("  pushi");
+				gen_cmd_pushsf ();
+				gen_cmd_pushni (idx);
+				gen_cmd_add ();
+				gen_cmd_pushi ();
 			}
 			else if (find_var (gbl_p, buf, &idx))
 			{
@@ -765,9 +860,9 @@ int parse_operand()
 	{
 		if (parse_operand ())
 		{
-			write_strln ("  inv");
-			write_strln ("  push 1");
-			write_strln ("  add");
+			gen_cmd_inv ();
+			gen_cmd_pushni (1);
+			gen_cmd_add ();
 			return 1;
 		}
 	}
@@ -791,12 +886,12 @@ int parse_expr()
 		if (read_sym ('+'))
 		{
 			parse_operand ();
-			write_strln ("  add");
+			gen_cmd_add ();
 		}
 		else if (read_sym ('-'))
 		{
 			parse_operand ();
-			write_strln ("  sub");
+			gen_cmd_sub ();
 		}
 		else if (read_sym ('*'))
 		{
@@ -954,7 +1049,7 @@ int parse_keyword_block()
 			return 0;
 		}
 	}
-	else if (read_sym_s ("__asm"))
+	else if (read_sym_s ("asm"))
 	{
 		if (!read_sym ('{'))
 		{
@@ -1235,7 +1330,7 @@ int parse_gvar(char* name)
 		return 0;
 	}
 	gen_cmd_label (name);
-	write_str (" .word ");
+	write_str (" .quad ");
 	write_strln (num);
 	store_var (gbl_p, name);
 	return 1;
@@ -1257,7 +1352,7 @@ int parse_garr(char* name)
 		return 0;
 	}
 	gen_cmd_label (name);
-	write_str (" .zero ");
+	write_str (" .space 8*");
 	write_strln (num);
 	store_var (gbl_p, name);
 	return 1;
@@ -1283,7 +1378,7 @@ int parse_statement()
 		{
 			return 0;
 		}
-		write_strln ("  popi");
+		gen_cmd_popi ();
 		return 1;
 	}
 
@@ -1298,7 +1393,7 @@ int parse_statement()
 			return 0;
 		}
 		/* save it */
-		gen_cmd_pop_static ("__retval");
+		write_strln ("  pop %rax");
 		/* jump to end of function */
 		idx = 0;
 		while (*(loc_p + idx) != ' ')
@@ -1307,10 +1402,7 @@ int parse_statement()
 			idx = idx + 1;
 		}
 		*(id + idx) = 0;
-		write_str ("  pushl __");
-		write_str (id);
-		write_strln ("_end");
-		write_strln("  jump");
+		gen_cmd_jump_x ("__", id, "_end");
 		return 1;
 	}
 	else if (read_sym_s ("goto"))
@@ -1320,9 +1412,7 @@ int parse_statement()
 			error_log ("label expected");
 			return 0;
 		}
-		write_str ("  pushl __");
-		write_strln (id);
-		write_strln ("jump");
+		gen_cmd_jump_x ("__", id, "");
 		return 1;
 	}
 	else if (read_sym_s ("break"))
@@ -1365,17 +1455,18 @@ int parse_statement()
 		}
 		if (find_var (loc_p, id, &idx))
 		{
-			write_strln ("  pushsf");
-			write_str ("  push ");
-			write_numln (idx);
-			write_strln ("  sub");
+			gen_cmd_pushsf ();
+			gen_cmd_pushni (idx);
+			gen_cmd_sub ();
+			/* account for ret addr: */
+			gen_cmd_pushni (1);
+			gen_cmd_sub ();
 		}
 		else if (find_var (arg_p, id, &idx))
 		{
-			write_strln ("  pushsf");
-			write_str ("  push ");
-			write_numln (idx);
-			write_strln ("  add");
+			gen_cmd_pushsf ();
+			gen_cmd_pushni (idx);
+			gen_cmd_add ();
 		}
 		else if (find_var (gbl_p, id, &idx))
 		{
@@ -1391,21 +1482,18 @@ int parse_statement()
 			/* Allocate and point */
 			store_var (loc_p, id);
 			find_var (loc_p, id, &idx);
-			write_strln ("  pushsf");
-			write_str ("  push ");
-			write_numln (idx);
-			write_strln ("  sub");
+			gen_cmd_pushsf ();
+			gen_cmd_pushni (idx);
+			gen_cmd_sub ();
 		}
 		gen_cmd_swap ();
-		write_strln ("  popi");
+		gen_cmd_popi ();
 	}
 
 	/* Label */
 	else if (read_sym (':'))
 	{
-		write_str ("__");
-		write_str (id);
-		write_strln (":");
+		gen_cmd_label_x ("__", id, "");
 	}
 
 	/* Local array definition.
@@ -1415,7 +1503,7 @@ int parse_statement()
 	else if (read_sym ('['))
 	{
 		/* Reserve memory cell for array pointer */
-		write_strln ("  push 0");
+		gen_cmd_pushni (0);
 
 		/* Calculate array size and leave it on the stack */
 		if (!parse_expr ())
@@ -1426,24 +1514,23 @@ int parse_statement()
 		{
 			return 0;
 		}
-		gen_cmd_push_static ("__memp");
+		write_strln ("  push %rdi");
 		gen_cmd_dup ();
 
 		store_var (loc_p, id);
 		find_var (loc_p, id, &idx);
 
-		write_strln ("  pushsf");
-		write_str ("  push ");
-		write_numln (idx);
-		write_strln ("  sub");
+		gen_cmd_pushsf ();
+		gen_cmd_pushni (idx);
+		gen_cmd_sub ();
 
 		/* Initialize the array pointer */
 		gen_cmd_swap ();
-		write_strln ("  popi");
+		gen_cmd_popi ();
 
 		/* Allocate memory for the array */
-		write_strln ("  add");
-		gen_cmd_pop_static ("__memp");
+		gen_cmd_add ();
+		write_strln ("  pop %rdi");
 	}
 
 	else
@@ -1500,7 +1587,7 @@ int parse_func(char* name)
 	write_strln (":");
 
 	/* Save allocation pointer on stack */
-	gen_cmd_push_static ("__memp");
+	write_strln ("  push %rdi");
 	/* ..and reserve dummy local variable with index 1 */
 	store_var (loc_p, "?");
 
@@ -1537,17 +1624,14 @@ int parse_func(char* name)
 	}
 
 	/* Function end label */
-	write_str ("__");
-	write_str (name);
-	write_strln ("_end:");
+	gen_cmd_label_x ("__", name, "_end");
 
 	/* Release allocated memory (if any) */
-	gen_cmd_pushl ("__memp");
-	write_strln ("  pushsf");
-	write_strln ("  push 1");
-	write_strln ("  sub");
-	write_strln ("  pushi");
-	write_strln ("  popi");
+	gen_cmd_pushsf ();
+	gen_cmd_pushni (1);
+	gen_cmd_sub ();
+	gen_cmd_pushi ();
+	write_strln ("  pop %rdi");
 
 	/* Return statement */
 	write_strln ("  ret");

@@ -2,7 +2,7 @@
 
 int putchar (char c)
 {
-	__asm
+	asm
 	{
 	  pushsf
 	  push 1
