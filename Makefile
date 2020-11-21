@@ -1,10 +1,10 @@
 CC=gcc
+AS=as
+LD=ld
 
-all: ./cc ./rr
+all: ./cc
 ./cc: c.c
 	$(CC) c.c -o cc
-./rr: r.c
-	$(CC) r.c -o rr
 help:
 	@echo "make (all|)               - just build"
 	@echo "make run SRC=<filename>   - build & run"
@@ -12,7 +12,6 @@ help:
 	@echo "make clean                - remove redundant files"
 run: all
 	cat $(SRC) | ./cc > $(SRC).s
-	./rr $(SRC).s
 	rm $(SRC).s
 clean:
-	rm -f cc rr
+	rm -f cc

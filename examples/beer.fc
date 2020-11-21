@@ -1,7 +1,7 @@
 /* 99 bottles song for FemtoC */
 
 int putc(char c) {
-	__def_asm {
+	__asm {
 	  pushsf
 	  push 1
 	  add

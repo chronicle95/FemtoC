@@ -433,127 +433,60 @@ int read_number(char* dst)
 
 int gen_cmd_swap()
 {
-	if (arch == 0)
-	{
-		write_strln ("  swap");
-	}
-	else
-	{
-		write_strln ("  pop %rax");
-		write_strln ("  pop %rbx");
-		write_strln ("  push %rax");
-		write_strln ("  push %rbx");
-	}
-
+	write_strln ("  pop %rax");
+	write_strln ("  pop %rbx");
+	write_strln ("  push %rax");
+	write_strln ("  push %rbx");
 	return 1;
 }
 
 int gen_cmd_pushl(char *name)
 {
-	if (arch == 0)
-	{
-		write_str ("  pushl ");
-		write_strln (name);
-	}
-	else
-	{
-		write_str ("  leaq ");
-		write_str (name);
-		write_strln ("(%rip), %rax");
-		write_strln ("  push %rax");
-	}
+	write_str ("  leaq ");
+	write_str (name);
+	write_strln ("(%rip), %rax");
+	write_strln ("  push %rax");
 	return 1;
 }
 
 int gen_cmd_call(char *name)
 {
-	if (arch == 0)
-	{
-		write_str ("  pushl ");
-		write_strln (name);
-		write_strln ("  call");
-	}
-	else
-	{
-		write_str ("  call ");
-		write_strln (name);
-	}
-
+	write_str ("  call ");
+	write_strln (name);
 	return 1;
 }
 
 int gen_cmd_jump(char *name)
 {
-	if (arch == 0)
-	{
-		write_str ("  pushl ");
-		write_strln (name);
-		write_strln ("  jump");
-	}
-	else
-	{
-		write_str ("  jmp ");
-		write_strln (name);
-	}
-
+	write_str ("  jmp ");
+	write_strln (name);
 	return 1;
 }
 
 int gen_cmd_nzjump(char *name)
 {
-	if (arch == 0)
-	{
-		write_str ("  pushl ");
-		write_strln (name);
-		write_strln ("  nzjump");
-	}
-	else
-	{
-		write_strln ("  pop %rax");
-		write_strln ("  cmp %rax, $0");
-		write_str ("  jne ");
-		write_strln (name);
-	}
-
+	write_strln ("  pop %rax");
+	write_strln ("  cmp %rax, $0");
+	write_str ("  jne ");
+	write_strln (name);
 	return 1;
 }
 
 int gen_cmd_push_static(char *name)
 {
-	if (arch == 0)
-	{
-		write_str ("  pushl ");
-		write_strln (name);
-		write_strln ("  pushi");
-	}
-	else
-	{
-		write_str ("  movq ");
-		write_str (name);
-		write_strln ("(%rip), %rax");
-		write_strln ("  push %rax");
-	}
-
+	write_str ("  movq ");
+	write_str (name);
+	write_strln ("(%rip), %rax");
+	write_strln ("  push %rax");
 	return 1;
 }
 
 int gen_cmd_pop_static(char *name)
 {
-	if (arch == 0)
-	{
-		write_str ("  pushl ");
-		write_strln (name);
-		write_strln ("  swap");
-		write_strln ("  popi");
-	}
-	else
-	{
-		write_strln ("  pop %rax");
-		write_str ("  movq %rax, ");
-		write_str (name);
-		write_strln ("(%rip)");
-	}
-
+	write_strln ("  pop %rax");
+	write_str ("  movq %rax, ");
+	write_str (name);
+	write_strln ("(%rip)");
 	return 1;
 }
 
@@ -566,69 +499,43 @@ int gen_cmd_label(char *name)
 
 int gen_cmd_not()
 {
-	if (arch == 0)
-	{
-		write_strln ("  not");
-	}
-	else
-	{
-		write_strln ("  pop %rax");
-		write_strln ("  xor %rax, %rax");
-		write_strln ("  test %edi, %edi");
-		write_strln ("  sete %al");
-		write_strln ("  push %rax");
-	}
-
+	write_strln ("  pop %rax");
+	write_strln ("  xor %rax, %rax");
+	write_strln ("  test %edi, %edi");
+	write_strln ("  sete %al");
+	write_strln ("  push %rax");
 	return 1;
 }
 
 int gen_cmd_and()
 {
-	if (arch == 0)
-	{
-		write_strln ("  and");
-	}
-	else
-	{
-		write_strln ("  pop %rax");
-		write_strln ("  pop %rbx");
-		write_strln ("  and %rbx, %rax");
-		write_strln ("  push %rax");
-	}
-
+	write_strln ("  pop %rax");
+	write_strln ("  pop %rbx");
+	write_strln ("  and %rbx, %rax");
+	write_strln ("  push %rax");
 	return 1;
 }
 
 int gen_cmd_or()
 {
-	if (arch == 0)
-	{
-		write_strln ("  or");
-	}
-	else
-	{
-		write_strln ("  pop %rax");
-		write_strln ("  pop %rbx");
-		write_strln ("  or %rbx, %rax");
-		write_strln ("  push %rax");
-	}
-
+	write_strln ("  pop %rax");
+	write_strln ("  pop %rbx");
+	write_strln ("  or %rbx, %rax");
+	write_strln ("  push %rax");
 	return 1;
 }
 
 int gen_cmd_dup()
 {
-	if (arch == 0)
-	{
-		write_strln ("  dup");
-	}
-	else
-	{
-		write_strln ("  pop %rax");
-		write_strln ("  push %rax");
-		write_strln ("  push %rax");
-	}
+	write_strln ("  pop %rax");
+	write_strln ("  push %rax");
+	write_strln ("  push %rax");
+	return 1;
+}
 
+int gen_cmd_drop()
+{
+	write_strln ("  pop %rax");
 	return 1;
 }
 
@@ -636,32 +543,14 @@ int gen_start()
 {
 	/* Use `puts` here instead of all `gen_cmd_*` stuff */
 	puts (";; Generated with FemtoC");
-	if (arch == 0)
-	{
-		puts (";; Reference runtime [RP]");
-		puts ("  pushl __memp");
-		puts ("  pushl __the_end");
-		puts ("  popi");
-		puts ("  pushl main");
-		puts ("  call");
-		puts ("  halt");
-		puts ("__retval:");
-		puts (" .word 0");
-		puts ("__memp:");
-		puts (" .word 0");
-	}
-	else
-	{
-		puts (";; GNU Assembler listing [x86_64]");
-		puts (" .data");
-		puts (" .globl __memp");
-		puts (" .align 8");
-		puts (" .type __memp, @object");
-		puts (" .size __memp, 8");
-		puts ("__memp:");
-		puts (" .quad __the_end");
-	}
-
+	puts (";; GNU Assembler [as, x86_64]");
+	puts (" .data");
+	puts (" .globl __memp");
+	puts (" .align 8");
+	puts (" .type __memp, @object");
+	puts (" .size __memp, 8");
+	puts ("__memp:");
+	puts (" .quad __the_end");
 	return 1;
 }
 
@@ -729,7 +618,7 @@ int parse_invoke(char *name)
 	n = 0;
 	while (n < argcnt)
 	{
-		write_strln ("  drop");
+		gen_cmd_drop ();
 		n = n + 1;
 	}
 
@@ -1065,7 +954,7 @@ int parse_keyword_block()
 			return 0;
 		}
 	}
-	else if (read_sym_s ("__def_asm"))
+	else if (read_sym_s ("__asm"))
 	{
 		if (!read_sym ('{'))
 		{
@@ -1076,54 +965,15 @@ int parse_keyword_block()
 		while (!read_sym ('}'))
 		{
 			read_space ();
-			if (arch == 0)
-			{
-				write_str ("  ");
-			}
+			write_str ("  ");
 			while ((*src_p != 10) && (*src_p != '}'))
 			{
-				if (arch == 0)
-				{
-					write_chr (*src_p);
-				}
+				write_chr (*src_p);
 				src_p = src_p + 1;
 			}
-			if (arch == 0)
-			{
-				write_chr (10);
-			}
+			write_chr (10);
 		}
 		write_strln(";; } ASM");
-	}
-	else if (read_sym_s ("__gnu_asm"))
-	{
-		if (!read_sym ('{'))
-		{
-			error_log ("`{` expected");
-			return 0;
-		}
-		write_strln(";; GNU ASM {");
-		while (!read_sym ('}'))
-		{
-			read_space ();
-			if (arch == 1)
-			{
-				write_str ("  ");
-			}
-			while ((*src_p != 10) && (*src_p != '}'))
-			{
-				if (arch == 1)
-				{
-					write_chr (*src_p);
-				}
-				src_p = src_p + 1;
-			}
-			if (arch == 1)
-			{
-				write_chr (10);
-			}
-		}
-		write_strln(";; } GNU ASM");
 	}
 	else
 	{
@@ -1221,7 +1071,7 @@ int parse_conditional()
 	else
 	{
 		gen_cmd_label (lbl);
-		write_strln ("  drop");
+		gen_cmd_drop ();
 	}
 
 	return 1;
@@ -1720,30 +1570,9 @@ int parse_preprocessor(char *ppname)
 	{
 		/* Not supported for now */
 	}
-	else if (strcomp (ppname, "arch"))
-	{
-		if (!read_id (atype))
-		{
-			error_log ("invalid output architecture");
-			return 0;
-		}
-		if (strcomp (atype, "default"))
-		{
-			arch = 0;
-		}
-		else if (strcomp (atype, "gas"))
-		{
-			arch = 1;
-		}
-		else
-		{
-			error_log ("unsupported arch. use: default,gas");
-			return 0;
-		}
-	}
 	else
 	{
-		error_log ("unsupported preprocessor. use: include,define,arch");
+		error_log ("unsupported preprocessor. use: include,define");
 		return 0;
 	}
 	/* Find new line */
