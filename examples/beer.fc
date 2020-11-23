@@ -1,12 +1,13 @@
 /* 99 bottles song for FemtoC */
 
 int putc(char c) {
-	asm {
-	  pushsf
-	  push 1
-	  add
-	  pushi
-	  output
+	asm
+	{
+	movq $1, %rax        # syscall = write
+	movq $1, %rdi        # file = stdout
+	leaq 8(%rbp), %rsi   # buffer = &c
+	movq $1, %rdx        # count = 1
+	syscall
 	}
 }
 
@@ -20,11 +21,11 @@ int putn(int n) {
 	}
 	while (n > 0) {
 		*ptr = n % 10 + '0';
-		ptr = ptr + 1;
+		ptr = ptr + 8;
 		n = n / 10;
 	}
 	while (ptr != buf) {
-		ptr = ptr - 1;
+		ptr = ptr - 8;
 		putc (*ptr);
 	}
 }
@@ -34,18 +35,18 @@ int puts(char *s)
 	while (*s)
 	{
 		putc (*s);
-		s = s + 1;
+		s = s + 8;
 	}
 }
 
 int printf(char *fmt)
 {
-	char *arg = &fmt + 1;
+	char *arg = &fmt + 8;
 	while (*fmt)
 	{
 		if (*fmt == '%')
 		{
-			fmt = fmt + 1;
+			fmt = fmt + 8;
 			if (*fmt == 'c')
 			{
 				putc (*arg);
@@ -58,13 +59,13 @@ int printf(char *fmt)
 			{
 				putn (*arg);
 			}
-			arg = arg + 1;
+			arg = arg + 8;
 		}
 		else
 		{
 			putc (*fmt);
 		}
-		fmt = fmt + 1;
+		fmt = fmt + 8;
 	}
 }
 
