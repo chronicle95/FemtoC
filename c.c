@@ -547,7 +547,7 @@ int gen_cmd_jump_x(char *prefix, char *name, char *suffix)
 int gen_cmd_nzjump(char *name)
 {
 	write_strln ("  pop %rax");
-	write_strln ("  cmp %rax, $0");
+	write_strln ("  cmpq $0, %rax");
 	write_str ("  jne ");
 	write_strln (name);
 	return 1;
