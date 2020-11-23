@@ -648,8 +648,8 @@ int gen_start()
 	puts ("  call main");
 
 	/* Call exit(0) */
-	puts ("  movq $60, %rax");
-	puts ("  xor %rdi, %rdi");
+	puts ("  movq %rax, %rdi           # rc = 0");
+	puts ("  movq $60, %rax            # call = EXIT");
 	puts ("  syscall");
 	return 1;
 }
@@ -1607,6 +1607,9 @@ int parse_func(char* name)
 	{
 		return 0;
 	}
+
+	/* Default return value */
+	write_strln ("  xor %rax, %rax");
 
 	/* Function end label */
 	gen_cmd_label_x ("__", name, "_end");
