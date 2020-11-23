@@ -443,7 +443,7 @@ int gen_cmd_swap()
 
 int gen_cmd_pushns(char *value)
 {
-	write_str ("  movq ");
+	write_str ("  movq $");
 	write_str (value);
 	write_strln (", %rax");
 	write_strln ("  push %rax");
@@ -452,7 +452,7 @@ int gen_cmd_pushns(char *value)
 
 int gen_cmd_pushni(int value)
 {
-	write_str ("  movq ");
+	write_str ("  movq $");
 	write_num (value);
 	write_strln (", %rax");
 	write_strln ("  push %rax");
@@ -496,7 +496,7 @@ int gen_cmd_add()
 {
 	write_strln ("  pop %rax");
 	write_strln ("  pop %rbx");
-	write_strln ("  add %rsp, %rsp");
+	write_strln ("  add %rbx, %rax");
 	write_strln ("  push %rax");
 	return 1;
 }
@@ -638,6 +638,8 @@ int gen_start()
 
 	/* Initialize data and stack pointers */
 	puts (" .text");
+	puts (" .global _start");
+	puts ("_start:");
 	puts ("  leaq __mema(%rip), %rdi");
 	puts ("  leaq __mema_end-8(%rip), %rsp");
 	puts ("  movq %rsp, %rbp");
@@ -1626,14 +1628,8 @@ int parse_func(char* name)
 	/* Function end label */
 	gen_cmd_label_x ("__", name, "_end");
 
-	/* Release allocated memory (if any) */
-	gen_cmd_pushsf ();
-	gen_cmd_pushni (1);
-	gen_cmd_sub ();
-	gen_cmd_pushi ();
-	write_strln ("  pop %rdi");
-
 	/* Return statement */
+	write_strln ("  pop %rdi");
 	write_strln ("  ret");
 
 	/* Erase lists of args and locals */
