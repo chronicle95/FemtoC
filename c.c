@@ -747,16 +747,13 @@ int parse_operand()
 		if (find_var (loc_p, buf, &idx))
 		{
 			gen_cmd_pushsf ();
-			gen_cmd_pushni (idx);
-			gen_cmd_sub ();
-			/* account for ret addr: */
-			gen_cmd_pushni (1);
+			gen_cmd_pushni ((idx + 1) * sizeof(long long));
 			gen_cmd_sub ();
 		}
 		else if (find_var (arg_p, buf, &idx))
 		{
 			gen_cmd_pushsf ();
-			gen_cmd_pushni (idx);
+			gen_cmd_pushni (idx * sizeof(long long));
 			gen_cmd_add ();
 		}
 		else if (find_var (gbl_p, buf, &idx))
@@ -836,14 +833,14 @@ int parse_operand()
 			if (find_var (loc_p, buf, &idx))
 			{
 				gen_cmd_pushsf ();
-				gen_cmd_pushni (idx);
+				gen_cmd_pushni ((idx + 1) * sizeof(long long));
 				gen_cmd_sub ();
 				gen_cmd_pushi ();
 			}
 			else if (find_var (arg_p, buf, &idx))
 			{
 				gen_cmd_pushsf ();
-				gen_cmd_pushni (idx);
+				gen_cmd_pushni (idx * sizeof(long long));
 				gen_cmd_add ();
 				gen_cmd_pushi ();
 			}
@@ -1458,16 +1455,13 @@ int parse_statement()
 		if (find_var (loc_p, id, &idx))
 		{
 			gen_cmd_pushsf ();
-			gen_cmd_pushni (idx);
-			gen_cmd_sub ();
-			/* account for ret addr: */
-			gen_cmd_pushni (1);
+			gen_cmd_pushni ((idx + 1) * sizeof(long long));
 			gen_cmd_sub ();
 		}
 		else if (find_var (arg_p, id, &idx))
 		{
 			gen_cmd_pushsf ();
-			gen_cmd_pushni (idx);
+			gen_cmd_pushni (idx * sizeof(long long));
 			gen_cmd_add ();
 		}
 		else if (find_var (gbl_p, id, &idx))
@@ -1485,7 +1479,7 @@ int parse_statement()
 			store_var (loc_p, id);
 			find_var (loc_p, id, &idx);
 			gen_cmd_pushsf ();
-			gen_cmd_pushni (idx);
+			gen_cmd_pushni ((idx + 1) * sizeof(long long));
 			gen_cmd_sub ();
 		}
 		gen_cmd_swap ();
@@ -1504,8 +1498,8 @@ int parse_statement()
 	 * stack */
 	else if (read_sym ('['))
 	{
-		/* Reserve memory cell for array pointer */
-		gen_cmd_pushni (0);
+		/* Initialize array pointer */
+		write_strln ("  push %rdi");
 
 		/* Calculate array size and leave it on the stack */
 		if (!parse_expr ())
@@ -1516,23 +1510,12 @@ int parse_statement()
 		{
 			return 0;
 		}
-		write_strln ("  push %rdi");
-		gen_cmd_dup ();
 
 		store_var (loc_p, id);
-		find_var (loc_p, id, &idx);
-
-		gen_cmd_pushsf ();
-		gen_cmd_pushni (idx);
-		gen_cmd_sub ();
-
-		/* Initialize the array pointer */
-		gen_cmd_swap ();
-		gen_cmd_popi ();
 
 		/* Allocate memory for the array */
-		gen_cmd_add ();
-		write_strln ("  pop %rdi");
+		write_strln ("  pop %rax");
+		write_strln ("  add %rax, %rdi");
 	}
 
 	else
@@ -1629,6 +1612,8 @@ int parse_func(char* name)
 	gen_cmd_label_x ("__", name, "_end");
 
 	/* Return statement */
+	write_strln ("  movq %rbp, %rsp");
+	write_strln ("  leaq -16(%rsp), %rsp");
 	write_strln ("  pop %rdi");
 	write_strln ("  ret");
 
