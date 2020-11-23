@@ -157,7 +157,7 @@ int write_strln(char *s)
 
 int error_log(char *s)
 {
-	write_str (";; [ERROR]: ");
+	write_str ("# [ERROR]: ");
 	write_strln (s);
 	return 0;
 }
@@ -629,11 +629,11 @@ int gen_cmd_drop()
 int gen_start()
 {
 	/* Use `puts` here instead of all `gen_cmd_*` stuff */
-	puts (";; Generated with FemtoC");
-	puts (";; GNU Assembler [as, x86_64]");
+	puts ("# Generated with FemtoC");
+	puts ("# GNU Assembler [as, x86_64]");
 	puts (" .data");
 	puts ("__mema:");
-	puts (" .space $1000000");
+	puts (" .space 16777216");
 	puts ("__mema_end:");
 
 	/* Initialize data and stack pointers */
@@ -1056,7 +1056,7 @@ int parse_keyword_block()
 			error_log ("`{` expected");
 			return 0;
 		}
-		write_strln(";; ASM {");
+		write_strln("# ASM {");
 		while (!read_sym ('}'))
 		{
 			read_space ();
@@ -1068,7 +1068,7 @@ int parse_keyword_block()
 			}
 			write_chr (10);
 		}
-		write_strln(";; } ASM");
+		write_strln("# } ASM");
 	}
 	else
 	{
@@ -1753,7 +1753,7 @@ int main()
 		src_p = src_p + 1;
 		if ((src_p - source) == SRC_SZ)
 		{
-			puts (";; Overflow!!");
+			puts ("# Overflow!!");
 			break;
 		}
 	}
@@ -1766,11 +1766,11 @@ int main()
 	puts (result);
 	if (!*src_p)
 	{
-		puts (";; The end: no errors encountered");
+		puts ("# The end: no errors encountered");
 	}
 	else
 	{
-		puts (";; Error(s) found!");
+		puts ("# Error(s) found!");
 	}
 
 	return 0; /* SUCCESS */
