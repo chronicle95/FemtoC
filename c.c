@@ -526,6 +526,7 @@ int gen_cmd_call(char *name)
 int gen_cmd_pushsf()
 {
 	write_strln ("  push %rbp");
+	return 1;
 }
 
 int gen_cmd_jump(char *name)
@@ -623,6 +624,76 @@ int gen_cmd_dup()
 int gen_cmd_drop()
 {
 	write_strln ("  pop %rax");
+	return 1;
+}
+
+int _gen_cmd_cmp(char *type)
+{
+	write_strln ("  pop %rax");
+	write_strln ("  pop %rbx");
+	write_strln ("  xor %rdx, %rdx");
+	write_strln ("  cmp %rax, %rbx");
+	write_str ("  set");
+	write_str (type);
+	write_strln (" %dl");
+	write_strln ("  push %rdx");
+	return 1;
+}
+
+int gen_cmd_cmpeq()
+{
+	return _gen_cmd_cmp("e");
+}
+
+int gen_cmd_cmpne()
+{
+	return _gen_cmd_cmp("ne");
+}
+
+int gen_cmd_cmplt()
+{
+	return _gen_cmd_cmp("l");
+}
+
+int gen_cmd_cmple()
+{
+	return _gen_cmd_cmp("le");
+}
+
+int gen_cmd_cmpgt()
+{
+	return _gen_cmd_cmp("g");
+}
+
+int gen_cmd_cmpge()
+{
+	return _gen_cmd_cmp("ge");
+}
+
+int gen_cmd_mul()
+{
+	write_strln ("  pop %rax");
+	write_strln ("  pop %rbx");
+	write_strln ("  mulq %rbx");
+	write_strln ("  push %rax");
+	return 1;
+}
+
+int gen_cmd_div()
+{
+	write_strln ("  pop %rbx");
+	write_strln ("  pop %rax");
+	write_strln ("  divq %rbx");
+	write_strln ("  push %rax");
+	return 1;
+}
+
+int gen_cmd_mod()
+{
+	write_strln ("  pop %rbx");
+	write_strln ("  pop %rax");
+	write_strln ("  divq %rbx");
+	write_strln ("  push %rdx");
 	return 1;
 }
 
@@ -895,24 +966,24 @@ int parse_expr()
 		else if (read_sym ('*'))
 		{
 			parse_operand ();
-			write_strln ("  mul");
+			gen_cmd_mul ();
 		}
 		else if (read_sym ('/'))
 		{
 			parse_operand ();
-			write_strln ("  div");
+			gen_cmd_div ();
 		}
 		else if (read_sym ('%'))
 		{
 			parse_operand ();
-			write_strln ("  mod");
+			gen_cmd_mod ();
 		}
 		else if (read_sym ('='))
 		{
 			if (read_sym ('='))
 			{
 				parse_operand ();
-				write_strln ("  cmpeq");
+				gen_cmd_cmpeq ();
 			}
 			else
 			{
@@ -927,7 +998,7 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("  cmple");
+				gen_cmd_cmple ();
 			}
 			else
 			{
@@ -935,7 +1006,7 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("  cmplt");
+				gen_cmd_cmplt ();
 			}
 		}
 		else if (read_sym ('>'))
@@ -946,7 +1017,7 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("  cmpge");
+				gen_cmd_cmpge ();
 			}
 			else
 			{
@@ -954,7 +1025,7 @@ int parse_expr()
 				{
 					return 0;
 				}
-				write_strln ("  cmpgt");
+				gen_cmd_cmpgt ();
 			}
 		}
 		else if (read_sym ('!'))
@@ -967,7 +1038,7 @@ int parse_expr()
 			{
 				return 0;
 			}
-			write_strln ("  cmpne");
+			gen_cmd_cmpne ();
 		}
 		else if (read_sym ('&'))
 		{
