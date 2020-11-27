@@ -31,6 +31,12 @@ int LOC_SZ = 800;   /* up to 32 local variables */
 int GBL_SZ = 6400;  /* up to 256 global identifiers (f + v) */
 int ARG_SZ = 200;   /* up to 8 arguments per function */
 
+/* Global variables: Types */
+char TYPE_INT = 1;
+char TYPE_INTPTR = 2;
+char TYPE_CHAR = 3;
+char TYPE_CHARPTR = 4;
+
 char* src_p = 0; /* source code pointer
 		    points to current location */
 char* out_p = 0; /* output pointer
@@ -39,21 +45,20 @@ char* loc_p = 0; /* function locals list.
 		    points to the beginning.
 		    record goes as follow:
 
-		    f-var0 f-var1 f-var2 ... */
+		    (t)f-var0 (t)f-var1 (t)f-var2 ... */
 char* arg_p = 0; /* function arguments list.
 		    points to the beginning.
 		    record goes as follow:
 
-		    f-arg0 f-arg1 f-arg2 ... */
+		    (t)f-arg0 (t)f-arg1 (t)f-arg2 ... */
 char* gbl_p = 0; /* global variable list.
 		    points to the beginning.
 		    record goes as follow:
 
-		    var0 var1 ... */
+		    (t)var0 (t)var1 ... */
 int lbl_cnt = 0;   /* Label counter. Used for temporary labels */
 char* lbl_sta = 0; /* Nearest loop start label */
 char* lbl_end = 0; /* Nearest loop end label */
-int arch = 0;      /* Output type: 0 - default, 1 - GAS (Linux/x86) */
 
 /* Utility functions */
 
@@ -198,7 +203,7 @@ int write_numln(int n)
 	return 1;
 }
 
-int store_var(char *ptr, char *s)
+int store_var(char *ptr, char *s, char type)
 {
 	char *fp = ptr;
 	/* look for the end */
@@ -367,6 +372,38 @@ int read_str_const()
 	return 1;
 }
 
+int read_type(char* type)
+{
+	if (read_sym_s ("int"))
+	{
+		if (read_sym ('*'))
+		{
+			*type = TYPE_INTPTR;
+		}
+		else
+		{
+			*type = TYPE_INT;
+		}
+	}
+	else if (read_sym_s ("char"))
+	{
+		if (read_sym ('*'))
+		{
+			*type = TYPE_CHARPTR;
+		}
+		else
+		{
+			*type = TYPE_CHAR;
+		}
+	}
+	else
+	{
+		error_log ("bad data type");
+		return 0;
+	}
+	return 1;
+}
+
 int read_id(char* dst)
 {
 	char* dp = dst;
@@ -383,15 +420,6 @@ int read_id(char* dst)
 		src_p = src_p + 1;
 	}
 	*dp = 0;
-
-	/* Types are ignored */
-	if (strcomp (dst, "int") || strcomp (dst, "char"))
-	{
-		/* Bypass pointer asterisks too */
-		while (read_sym ('*'));
-		/* Read the actual identifier */
-		return read_id (dst);
-	}
 
 	return 1;
 }
@@ -1433,6 +1461,7 @@ int parse_statement()
 	int idx = 0;
 	char id[ID_SZ];
 	char num[ID_SZ];
+	char type = 0;
 
 	if (read_sym ('*'))
 	{
@@ -1501,6 +1530,77 @@ int parse_statement()
 		}
 		return 1;
 	}
+	else if (read_type (&type))
+	{
+		/* Definition of a local variable */
+		if (!read_id (id))
+		{
+			error_log ("identifier expected");
+			return 0;
+		}
+		if (read_sym ('='))
+		{
+			if (!parse_expr ())
+			{
+				return 0;
+			}
+			if (find_var (loc_p, id, &idx)
+					|| find_var (gbl_p, id, &idx)
+					|| find_var (arg_p, id, &idx))
+			{
+				error_log ("duplicate identifier");
+				return 0;
+			}
+			else
+			{
+				/* In a case of new allocation we need to provide
+				 * space on stack for it so that we a have a place
+				 * to store the value */
+				gen_cmd_dup ();
+
+				/* Allocate and point */
+				store_var (loc_p, id, type);
+				find_var (loc_p, id, &idx);
+				gen_cmd_pushsf ();
+				gen_cmd_pushni ((idx + 1) * sizeof(long long));
+				gen_cmd_sub ();
+			}
+			gen_cmd_swap ();
+			gen_cmd_popi ();
+		}
+		else if (read_sym ('['))
+		{
+			/* Local array definition.
+			 * It is not placed on stack but instead dynamically
+			 * allocated from pool, only the pointer stays on
+			 * stack */
+
+			/* Initialize array pointer */
+			write_strln ("  push %rdi");
+
+			/* Calculate array size and leave it on the stack */
+			if (!parse_expr ())
+			{
+				return 0;
+			}
+			if (!read_sym (']'))
+			{
+				return 0;
+			}
+
+			store_var (loc_p, id, type);
+
+			/* Allocate memory for the array */
+			write_strln ("  pop %rax");
+			write_strln ("  add %rax, %rdi");
+		}
+		else
+		{
+			error_log ("definition = or [ expected");
+			return 0;
+		}
+		return 1;
+	}
 
 	/* Otherwise check for identifier */
 	else if (!read_id (id))
@@ -1541,17 +1641,8 @@ int parse_statement()
 		}
 		else
 		{
-			/* In a case of new allocation we need to provide
-			 * space on stack for it so that we a have a place
-			 * to store the value */
-			gen_cmd_dup ();
-
-			/* Allocate and point */
-			store_var (loc_p, id);
-			find_var (loc_p, id, &idx);
-			gen_cmd_pushsf ();
-			gen_cmd_pushni ((idx + 1) * sizeof(long long));
-			gen_cmd_sub ();
+			error_log ("undefined identifier");
+			return 0;
 		}
 		gen_cmd_swap ();
 		gen_cmd_popi ();
@@ -1561,32 +1652,6 @@ int parse_statement()
 	else if (read_sym (':'))
 	{
 		gen_cmd_label_x ("__", id, "");
-	}
-
-	/* Local array definition.
-	 * It is not placed on stack but instead dynamically
-	 * allocated from pool, only the pointer stays on
-	 * stack */
-	else if (read_sym ('['))
-	{
-		/* Initialize array pointer */
-		write_strln ("  push %rdi");
-
-		/* Calculate array size and leave it on the stack */
-		if (!parse_expr ())
-		{
-			return 0;
-		}
-		if (!read_sym (']'))
-		{
-			return 0;
-		}
-
-		store_var (loc_p, id);
-
-		/* Allocate memory for the array */
-		write_strln ("  pop %rax");
-		write_strln ("  add %rax, %rdi");
 	}
 
 	else
@@ -1601,9 +1666,15 @@ int parse_statement()
 int parse_argslist()
 {
 	char id[ID_SZ];
+	char type = 0;
 
 	while (1)
 	{
+		if (!read_type (&type))
+		{
+			return 0;
+		}
+
 		if (!read_id (id))
 		{
 			if (read_sym (')'))
@@ -1615,7 +1686,7 @@ int parse_argslist()
 			return 0;
 		}
 
-		store_var (arg_p, id);
+		store_var (arg_p, id, type);
 
 		if (!read_sym (','))
 		{
