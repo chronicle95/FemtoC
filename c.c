@@ -1,19 +1,19 @@
-/*
- * This file is part of the FemtoC project (https://github.com/chronicle95).
- * Copyright (c) 2017-2019 Artem Bondarenko.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+/******************************************************************************
+* This file is part of the FemtoC project (https://github.com/chronicle95).   *
+* Copyright (c) 2017-2020 Artem Bondarenko.                                   *
+*                                                                             *
+* This program is free software: you can redistribute it and/or modify        *
+* it under the terms of the GNU General Public License as published by        *
+* the Free Software Foundation, version 3.                                    *
+*                                                                             *
+* This program is distributed in the hope that it will be useful, but         *
+* WITHOUT ANY WARRANTY; without even the implied warranty of                  *
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU            *
+* General Public License for more details.                                    *
+*                                                                             *
+* You should have received a copy of the GNU General Public License           *
+* along with this program. If not, see <http://www.gnu.org/licenses/>.        *
+******************************************************************************/
 
 #include <stdio.h>
 
@@ -24,7 +24,7 @@ int parse_loop_while();
 int parse_conditional();
 
 /* Global variables: Limits */
-int ID_SZ = 32;     /* maximum identifier length */
+int ID_SZ  = 32;    /* maximum identifier length */
 int SRC_SZ = 32000; /* up to ~2000 lines of C source code */
 int OUT_SZ = 65000; /* up to ~5500 lines of assembly output */
 int LOC_SZ = 800;   /* up to 32 local variables */
@@ -32,11 +32,12 @@ int GBL_SZ = 6400;  /* up to 256 global identifiers (f + v) */
 int ARG_SZ = 200;   /* up to 8 arguments per function */
 
 /* Global variables: Types */
-char TYPE_INT = 1;
-char TYPE_INTPTR = 2;
-char TYPE_CHAR = 3;
-char TYPE_CHARPTR = 4;
+char TYPE_INT    = 1;
+char TYPE_CHR    = 2;
+char TYPE_PTR    = 64;
+char TYPE_ARR    = 128;
 
+/* Global variables: Pointers */
 char* src_p = 0; /* source code pointer
 		    points to current location */
 char* out_p = 0; /* output pointer
@@ -56,11 +57,14 @@ char* gbl_p = 0; /* global variable list.
 		    record goes as follow:
 
 		    (t)var0 (t)var1 ... */
-int lbl_cnt = 0;   /* Label counter. Used for temporary labels */
-char* lbl_sta = 0; /* Nearest loop start label */
-char* lbl_end = 0; /* Nearest loop end label */
+int lbl_cnt = 0;     /* Label counter. Used for temporary labels */
+char* lbl_sta = 0;   /* Nearest loop start label */
+char* lbl_end = 0;   /* Nearest loop end label */
+int line_number = 0; /* Current source line number */
 
-/* Utility functions */
+/******************************************************************************
+* Utility functions                                                           *
+******************************************************************************/
 
 int copy_memory(char *dst, char *src, int size)
 {
@@ -160,13 +164,6 @@ int write_strln(char *s)
 	return 1;
 }
 
-int error_log(char *s)
-{
-	write_str ("# [ERROR]: ");
-	write_strln (s);
-	return 0;
-}
-
 int write_num(int n)
 {
 	char buf[10];
@@ -196,6 +193,15 @@ int write_num(int n)
 	return 1;
 }
 
+int error_log(char *s)
+{
+	write_str ("# [ERROR][L ");
+	write_num (line_number);
+	write_str ("]: ");
+	write_strln (s);
+	return 0;
+}
+
 int write_numln(int n)
 {
 	write_num (n);
@@ -203,7 +209,20 @@ int write_numln(int n)
 	return 1;
 }
 
-int store_var(char *ptr, char *s, char type)
+/**
+ * Appends a variable to a varlist
+ * A varlist is a sequence of characters, which are themselves
+ * a series of names, separated by a space character.
+ * Each name is prefixed with a single byte - the type of a
+ * variable.
+ * End of list is marked with null-character.
+ *
+ * @in ptr pointer to a varlist
+ * @in type is variable type
+ * @in s pointer to a null-terminated name under question
+ * @returns 1
+ */
+int store_var(char *ptr, char type, char *s)
 {
 	char *fp = ptr;
 	/* look for the end */
@@ -211,6 +230,9 @@ int store_var(char *ptr, char *s, char type)
 	{
 		fp = fp + 1;
 	}
+	/* put type in there */
+	*fp = type;
+	fp = fp + 1;
 	/* append a word */
 	while (*s)
 	{
@@ -225,15 +247,30 @@ int store_var(char *ptr, char *s, char type)
 	return 1;
 }
 
-int find_var(char *ptr, char *s, int *i)
+/**
+ * Finds a variable index and type in a varlist
+ *
+ * @in ptr pointer to a varlist
+ * @in s pointer to a null-terminated name under question
+ * @out t variable type
+ * @out i variable name index
+ * @returns 1 on success, 0 if not found
+ */
+int find_var(char *ptr, char *s, char *t, int *i)
 {
-	/* TODO: Imrove search function */
 	char *sp = s;
 	char *fp = ptr;
+	char tt = 0;
 	*i = 0;
 
 	while (*fp)
 	{
+		if (sp == s)
+		{
+			tt = *fp;
+			fp = fp + 1;
+		}
+
 		if (*fp == *sp)
 		{
 			sp = sp + 1;
@@ -249,6 +286,7 @@ int find_var(char *ptr, char *s, int *i)
 
 		if (*sp == 0)
 		{
+			*t = tt;
 			return 1;
 		}
 
@@ -265,7 +303,9 @@ int find_var(char *ptr, char *s, int *i)
 	return 0;
 }
 
-/* Character test functions */
+/******************************************************************************
+* Character test functions                                                    *
+******************************************************************************/
 
 int is_space(char c)
 {
@@ -291,7 +331,9 @@ int is_id(char c)
 		|| is_digit (c);
 }
 
-/* Read functions */
+/******************************************************************************
+* Read functions                                                              *
+******************************************************************************/
 
 int read_space()
 {
@@ -302,6 +344,10 @@ int read_space()
 		{
 			while (!((*src_p == '*') && (*(src_p+1) == '/')))
 			{
+				if (*src_p == 10)
+				{
+					line_number = line_number + 1;
+				}
 				src_p = src_p + 1;
 			}
 			src_p = src_p + 2;
@@ -310,6 +356,10 @@ int read_space()
 		/* Ignore spaces */
 		if (is_space (*src_p))
 		{
+			if (*src_p == 10)
+			{
+				line_number = line_number + 1;
+			}
 			src_p = src_p + 1;
 		}
 		else
@@ -374,32 +424,23 @@ int read_str_const()
 
 int read_type(char* type)
 {
+	read_space ();
 	if (read_sym_s ("int"))
 	{
-		if (read_sym ('*'))
-		{
-			*type = TYPE_INTPTR;
-		}
-		else
-		{
-			*type = TYPE_INT;
-		}
+		*type = TYPE_INT;
 	}
 	else if (read_sym_s ("char"))
 	{
-		if (read_sym ('*'))
-		{
-			*type = TYPE_CHARPTR;
-		}
-		else
-		{
-			*type = TYPE_CHAR;
-		}
+		*type = TYPE_CHR;
 	}
 	else
 	{
 		error_log ("bad data type");
 		return 0;
+	}
+	if (read_sym ('*'))
+	{
+		*type = *type | TYPE_PTR;
 	}
 	return 1;
 }
@@ -424,20 +465,6 @@ int read_id(char* dst)
 	return 1;
 }
 
-int read_id_pp(char *dst)
-{
-	read_space ();
-
-	if (*src_p == '#')
-	{
-		*dst = *src_p;
-		dst = dst + 1;
-		src_p = src_p + 1;
-	}
-
-	return read_id(dst);
-}
-
 int read_number(char* dst)
 {
 	read_space ();
@@ -458,7 +485,9 @@ int read_number(char* dst)
 	return 1;
 }
 
-/* Code generation functions */
+/******************************************************************************
+* Code generation functions                                                   *
+******************************************************************************/
 
 int gen_cmd_swap()
 {
@@ -753,8 +782,9 @@ int gen_start()
 	return 1;
 }
 
-/* Parse and process
- * functions */
+/******************************************************************************
+* Parse and process functions                                                 *
+******************************************************************************/
 
 int parse_expr();
 int parse_invoke(char *name)
@@ -829,6 +859,7 @@ int parse_operand()
 	char buf[ID_SZ];
 	char lbl[ID_SZ];
 	int idx = 0;
+	char type = 0;
 	if (read_sym ('!'))
 	{
 		if (parse_operand())
@@ -843,19 +874,19 @@ int parse_operand()
 		{
 			return 0;
 		}
-		if (find_var (loc_p, buf, &idx))
+		if (find_var (loc_p, buf, &type, &idx))
 		{
 			gen_cmd_pushsf ();
 			gen_cmd_pushni ((idx + 1) * sizeof(long long));
 			gen_cmd_sub ();
 		}
-		else if (find_var (arg_p, buf, &idx))
+		else if (find_var (arg_p, buf, &type, &idx))
 		{
 			gen_cmd_pushsf ();
 			gen_cmd_pushni (idx * sizeof(long long));
 			gen_cmd_add ();
 		}
-		else if (find_var (gbl_p, buf, &idx))
+		else if (find_var (gbl_p, buf, &type, &idx))
 		{
 			gen_cmd_pushl (buf);
 		}
@@ -929,21 +960,21 @@ int parse_operand()
 		}
 		else
 		{
-			if (find_var (loc_p, buf, &idx))
+			if (find_var (loc_p, buf, &type, &idx))
 			{
 				gen_cmd_pushsf ();
 				gen_cmd_pushni ((idx + 1) * sizeof(long long));
 				gen_cmd_sub ();
 				gen_cmd_pushi ();
 			}
-			else if (find_var (arg_p, buf, &idx))
+			else if (find_var (arg_p, buf, &type, &idx))
 			{
 				gen_cmd_pushsf ();
 				gen_cmd_pushni (idx * sizeof(long long));
 				gen_cmd_add ();
 				gen_cmd_pushi ();
 			}
-			else if (find_var (gbl_p, buf, &idx))
+			else if (find_var (gbl_p, buf, &type, &idx))
 			{
 				gen_cmd_push_static (buf);
 			}
@@ -1415,7 +1446,7 @@ int parse_loop_while()
 	return 1;
 }
 
-int parse_gvar(char* name)
+int parse_gvar(char type, char* name)
 {
 	char num[ID_SZ];
 	read_space ();
@@ -1430,11 +1461,11 @@ int parse_gvar(char* name)
 	gen_cmd_label (name);
 	write_str (" .quad ");
 	write_strln (num);
-	store_var (gbl_p, name);
+	store_var (gbl_p, type, name);
 	return 1;
 }
 
-int parse_garr(char* name)
+int parse_garr(char type, char* name)
 {
 	char num[ID_SZ];
 	if (!read_number (num))
@@ -1450,9 +1481,16 @@ int parse_garr(char* name)
 		return 0;
 	}
 	gen_cmd_label (name);
-	write_str (" .space 8*");
+	if (type != TYPE_CHR)
+	{
+		write_str (" .space 8*");
+	}
+	else
+	{
+		write_str (" .space ");
+	}
 	write_strln (num);
-	store_var (gbl_p, name);
+	store_var (gbl_p, type, name);
 	return 1;
 }
 
@@ -1544,9 +1582,9 @@ int parse_statement()
 			{
 				return 0;
 			}
-			if (find_var (loc_p, id, &idx)
-					|| find_var (gbl_p, id, &idx)
-					|| find_var (arg_p, id, &idx))
+			if (find_var (loc_p, id, &type, &idx)
+					|| find_var (gbl_p, id, &type, &idx)
+					|| find_var (arg_p, id, &type, &idx))
 			{
 				error_log ("duplicate identifier");
 				return 0;
@@ -1559,8 +1597,8 @@ int parse_statement()
 				gen_cmd_dup ();
 
 				/* Allocate and point */
-				store_var (loc_p, id, type);
-				find_var (loc_p, id, &idx);
+				store_var (loc_p, type, id);
+				find_var (loc_p, id, &type, &idx);
 				gen_cmd_pushsf ();
 				gen_cmd_pushni ((idx + 1) * sizeof(long long));
 				gen_cmd_sub ();
@@ -1588,7 +1626,7 @@ int parse_statement()
 				return 0;
 			}
 
-			store_var (loc_p, id, type);
+			store_var (loc_p, type, id);
 
 			/* Allocate memory for the array */
 			write_strln ("  pop %rax");
@@ -1623,19 +1661,19 @@ int parse_statement()
 		{
 			return 0;
 		}
-		if (find_var (loc_p, id, &idx))
+		if (find_var (loc_p, id, &type, &idx))
 		{
 			gen_cmd_pushsf ();
 			gen_cmd_pushni ((idx + 1) * sizeof(long long));
 			gen_cmd_sub ();
 		}
-		else if (find_var (arg_p, id, &idx))
+		else if (find_var (arg_p, id, &type, &idx))
 		{
 			gen_cmd_pushsf ();
 			gen_cmd_pushni (idx * sizeof(long long));
 			gen_cmd_add ();
 		}
-		else if (find_var (gbl_p, id, &idx))
+		else if (find_var (gbl_p, id, &type, &idx))
 		{
 			gen_cmd_pushl (id);
 		}
@@ -1668,29 +1706,25 @@ int parse_argslist()
 	char id[ID_SZ];
 	char type = 0;
 
-	while (1)
+	while (!read_sym (')'))
 	{
 		if (!read_type (&type))
 		{
+			error_log ("args: type expected");
 			return 0;
 		}
 
 		if (!read_id (id))
 		{
-			if (read_sym (')'))
-			{
-				unread_sym ();
-				return 1;
-			}
-			error_log ("arguments list not closed");
+			error_log ("args: identifier expected");
 			return 0;
 		}
 
-		store_var (arg_p, id, type);
+		store_var (arg_p, type, id);
 
-		if (!read_sym (','))
+		if (read_sym (','))
 		{
-			break;
+			continue;
 		}
 	}
 
@@ -1703,11 +1737,11 @@ int parse_func(char* name)
 
 	/* Put function name to locals and arguments lists
 	 * so that the first entry index starts with 1 */
-	store_var (loc_p, name);
-	store_var (arg_p, name);
+	store_var (loc_p, TYPE_INT, name);
+	store_var (arg_p, TYPE_INT, name);
 
 	/* Put function name to globals list */
-	store_var (gbl_p, name);
+	store_var (gbl_p, TYPE_INT, name);
 
 	/* Put label */
 	write_str (name);
@@ -1716,15 +1750,10 @@ int parse_func(char* name)
 	/* Save allocation pointer on stack */
 	write_strln ("  push %rdi");
 	/* ..and reserve dummy local variable with index 1 */
-	store_var (loc_p, "?");
+	store_var (loc_p, TYPE_INT, "?");
 
 	/* Arguments */
 	if (!parse_argslist ())
-	{
-		return 0;
-	}
-
-	if (!read_sym (')'))
 	{
 		return 0;
 	}
@@ -1796,18 +1825,38 @@ int parse_preprocessor(char *ppname)
 int parse_root()
 {
 	char id[ID_SZ];
-	/* Read identifier as a basis for any
-	 * statement within the program's root. */
-	while (read_id_pp (id))
+	char type = 0;
+
+	while (*src_p)
 	{
 		/* Preprocessor */
-		if (*id == '#')
+		if (read_sym ('#'))
 		{
-			if (!parse_preprocessor(id + 1))
+			if (!read_id (id))
+			{
+				error_log ("preprocessor identifier expected");
+				return 0;
+			}
+			if (!parse_preprocessor(id))
 			{
 				break;
 			}
 			continue;
+		}
+		if (!*src_p)
+		{
+			break;
+		}
+		/* Everything else must start with a type and id */
+		if (!read_type (&type))
+		{
+			error_log ("type expected");
+			return 0;
+		}
+		if (!read_id (id))
+		{
+			error_log ("identifier expected");
+			return 0;
 		}
 		/* A function declaration */
 		if (read_sym ('('))
@@ -1820,7 +1869,7 @@ int parse_root()
 		/* Global variable declaration and initialization */
 		else if (read_sym ('='))
 		{
-			if (!parse_gvar (id))
+			if (!parse_gvar (type, id))
 			{
 				break;
 			}
@@ -1828,13 +1877,14 @@ int parse_root()
 		/* Global array declaration */
 		else if (read_sym ('['))
 		{
-			if (!parse_garr (id))
+			if (!parse_garr (type, id))
 			{
 				break;
 			}
 		}
 		else
 		{
+			error_log ("function or variable definition expected");
 			break;
 		}
 	}
@@ -1844,7 +1894,9 @@ int parse_root()
 	return 1;
 }
 
-/* Entry point */
+/******************************************************************************
+* Entry point                                                                 *
+******************************************************************************/
 
 int main()
 {
