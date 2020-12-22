@@ -525,19 +525,33 @@ int gen_cmd_pushl(char *name)
 	return 1;
 }
 
-int gen_cmd_pushi()
+int gen_cmd_pushi(char type)
 {
 	write_strln ("  pop %rax");
-	write_strln ("  movq (%rax), %rax");
+	if (type == TYPE_CHR)
+	{
+		write_strln ("  movzbl (%rax), %rax");
+	}
+	else
+	{
+		write_strln ("  movq (%rax), %rax");
+	}
 	write_strln ("  push %rax");
 	return 1;
 }
 
-int gen_cmd_popi()
+int gen_cmd_popi(char type)
 {
 	write_strln ("  pop %rax");
 	write_strln ("  pop %rbx");
-	write_strln ("  movq %rax, (%rbx)");
+	if (type == TYPE_CHR)
+	{
+		write_strln ("  movzlb %rax, (%rbx)");
+	}
+	else
+	{
+		write_strln ("  movq %rax, (%rbx)");
+	}
 	return 1;
 }
 
@@ -611,16 +625,23 @@ int gen_cmd_nzjump(char *name)
 	return 1;
 }
 
-int gen_cmd_push_static(char *name)
+int gen_cmd_push_static(char *name, char type)
 {
-	write_str ("  movq ");
+	if (type == TYPE_CHR)
+	{
+		write_str ("  movzbl ");
+	}
+	else
+	{
+		write_str ("  movq ");
+	}
 	write_str (name);
 	write_strln ("(%rip), %rax");
 	write_strln ("  push %rax");
 	return 1;
 }
 
-int gen_cmd_pop_static(char *name)
+int gen_cmd_pop_static(char *name, char type)
 {
 	write_strln ("  pop %rax");
 	write_str ("  movq %rax, ");
@@ -684,14 +705,14 @@ int gen_cmd_drop()
 	return 1;
 }
 
-int _gen_cmd_cmp(char *type)
+int _gen_cmd_cmp(char *cond)
 {
 	write_strln ("  pop %rax");
 	write_strln ("  pop %rbx");
 	write_strln ("  xor %rdx, %rdx");
 	write_strln ("  cmp %rax, %rbx");
 	write_str ("  set");
-	write_str (type);
+	write_str (cond);
 	write_strln (" %dl");
 	write_strln ("  push %rdx");
 	return 1;
@@ -854,17 +875,17 @@ int parse_invoke(char *name)
 	return 1;
 }
 
-int parse_operand()
+int parse_operand(char *type)
 {
 	char buf[ID_SZ];
 	char lbl[ID_SZ];
 	int idx = 0;
-	char type = 0;
 	if (read_sym ('!'))
 	{
-		if (parse_operand())
+		if (parse_operand(type))
 		{
 			gen_cmd_not ();
+			*type = TYPE_INT;
 			return 1;
 		}
 	}
@@ -874,19 +895,19 @@ int parse_operand()
 		{
 			return 0;
 		}
-		if (find_var (loc_p, buf, &type, &idx))
+		if (find_var (loc_p, buf, type, &idx))
 		{
 			gen_cmd_pushsf ();
 			gen_cmd_pushni ((idx + 1) * sizeof(long long));
 			gen_cmd_sub ();
 		}
-		else if (find_var (arg_p, buf, &type, &idx))
+		else if (find_var (arg_p, buf, type, &idx))
 		{
 			gen_cmd_pushsf ();
 			gen_cmd_pushni (idx * sizeof(long long));
 			gen_cmd_add ();
 		}
-		else if (find_var (gbl_p, buf, &type, &idx))
+		else if (find_var (gbl_p, buf, type, &idx))
 		{
 			gen_cmd_pushl (buf);
 		}
@@ -895,21 +916,24 @@ int parse_operand()
 			error_log ("undeclared identifier");
 			return 0;
 		}
+		*type = TYPE_INT;
 		return 1;
 	}
 	else if (read_sym ('~'))
 	{
-		if (parse_operand())
+		if (parse_operand(type))
 		{
 			gen_cmd_inv ();
+			*type = TYPE_INT;
 			return 1;
 		}
 	}
 	else if (read_sym ('*'))
 	{
-		if (parse_operand())
+		if (parse_operand(type))
 		{
-			gen_cmd_pushi ();
+			gen_cmd_pushi (*type);
+			*type = *type & ~TYPE_PTR;
 			return 1;
 		}
 	}
@@ -926,11 +950,12 @@ int parse_operand()
 		gen_label (lbl);
 		gen_cmd_jump (buf);
 		gen_cmd_label (lbl);
-		write_str (" .quad");
+		write_str (" .byte");
 		read_str_const ();
 		write_strln (" 0");
 		gen_cmd_label (buf);
 		gen_cmd_pushl (lbl);
+		*type = TYPE_CHR | TYPE_PTR;
 		return 1;
 	}
 	else if (read_sym (39))
@@ -941,11 +966,13 @@ int parse_operand()
 		{
 			return 0;
 		}
+		*type = TYPE_CHR;
 		return 1;
 	}
 	else if (read_number (buf))
 	{
 		gen_cmd_pushns (buf);
+		*type = TYPE_INT;
 		return 1;
 	}
 	else if (read_id (buf))
@@ -960,23 +987,23 @@ int parse_operand()
 		}
 		else
 		{
-			if (find_var (loc_p, buf, &type, &idx))
+			if (find_var (loc_p, buf, type, &idx))
 			{
 				gen_cmd_pushsf ();
 				gen_cmd_pushni ((idx + 1) * sizeof(long long));
 				gen_cmd_sub ();
-				gen_cmd_pushi ();
+				gen_cmd_pushi (*type);
 			}
-			else if (find_var (arg_p, buf, &type, &idx))
+			else if (find_var (arg_p, buf, type, &idx))
 			{
 				gen_cmd_pushsf ();
 				gen_cmd_pushni (idx * sizeof(long long));
 				gen_cmd_add ();
-				gen_cmd_pushi ();
+				gen_cmd_pushi (*type);
 			}
-			else if (find_var (gbl_p, buf, &type, &idx))
+			else if (find_var (gbl_p, buf, type, &idx))
 			{
-				gen_cmd_push_static (buf);
+				gen_cmd_push_static (buf, *type);
 			}
 			else
 			{
@@ -987,20 +1014,21 @@ int parse_operand()
 	}
 	else if (read_sym ('-'))
 	{
-		if (parse_operand ())
+		if (parse_operand (type))
 		{
 			gen_cmd_inv ();
 			gen_cmd_pushni (1);
 			gen_cmd_add ();
+			*type = TYPE_INT;
 			return 1;
 		}
 	}
 	return 0;
 }
 
-int parse_expr()
+int parse_expr(char *type)
 {
-	if (!parse_operand ())
+	if (!parse_operand (type))
 	{
 		return 0;
 	}
@@ -1014,34 +1042,34 @@ int parse_expr()
 
 		if (read_sym ('+'))
 		{
-			parse_operand ();
+			parse_operand (type);
 			gen_cmd_add ();
 		}
 		else if (read_sym ('-'))
 		{
-			parse_operand ();
+			parse_operand (type);
 			gen_cmd_sub ();
 		}
 		else if (read_sym ('*'))
 		{
-			parse_operand ();
+			parse_operand (type);
 			gen_cmd_mul ();
 		}
 		else if (read_sym ('/'))
 		{
-			parse_operand ();
+			parse_operand (type);
 			gen_cmd_div ();
 		}
 		else if (read_sym ('%'))
 		{
-			parse_operand ();
+			parse_operand (type);
 			gen_cmd_mod ();
 		}
 		else if (read_sym ('='))
 		{
 			if (read_sym ('='))
 			{
-				parse_operand ();
+				parse_operand (type);
 				gen_cmd_cmpeq ();
 			}
 			else
@@ -1053,7 +1081,7 @@ int parse_expr()
 		{
 			if (read_sym ('='))
 			{
-				if (!parse_operand ())
+				if (!parse_operand (type))
 				{
 					return 0;
 				}
@@ -1061,7 +1089,7 @@ int parse_expr()
 			}
 			else
 			{
-				if (!parse_operand ())
+				if (!parse_operand (type))
 				{
 					return 0;
 				}
@@ -1072,7 +1100,7 @@ int parse_expr()
 		{
 			if (read_sym ('='))
 			{
-				if (!parse_operand ())
+				if (!parse_operand (type))
 				{
 					return 0;
 				}
@@ -1080,7 +1108,7 @@ int parse_expr()
 			}
 			else
 			{
-				if (!parse_operand ())
+				if (!parse_operand (type))
 				{
 					return 0;
 				}
@@ -1093,7 +1121,7 @@ int parse_expr()
 			{
 				return 0;
 			}
-			if (!parse_operand ())
+			if (!parse_operand (type))
 			{
 				return 0;
 			}
@@ -1103,7 +1131,7 @@ int parse_expr()
 		{
 			if (read_sym ('&'))
 			{
-				if (!parse_operand ())
+				if (!parse_operand (type))
 				{
 					return 0;
 				}
@@ -1115,7 +1143,7 @@ int parse_expr()
 			}
 			else
 			{
-				if (!parse_operand ())
+				if (!parse_operand (type))
 				{
 					return 0;
 				}
@@ -1126,7 +1154,7 @@ int parse_expr()
 		{
 			if (read_sym ('|'))
 			{
-				if (!parse_operand ())
+				if (!parse_operand (type))
 				{
 					return 0;
 				}
@@ -1138,7 +1166,7 @@ int parse_expr()
 			}
 			else
 			{
-				if (!parse_operand ())
+				if (!parse_operand (type))
 				{
 					return 0;
 				}
@@ -1245,6 +1273,7 @@ int parse_block()
 int parse_conditional()
 {
 	char lbl[ID_SZ];
+	char type = TYPE_INT;  /* don't care */
 
 	gen_label (lbl);
 
@@ -1253,7 +1282,7 @@ int parse_conditional()
 		return 0;
 	}
 
-	if (!parse_expr ())
+	if (!parse_expr (&type))
 	{
 		return 0;
 	}
@@ -1309,6 +1338,7 @@ int parse_loop_for()
 	char lbl4[ID_SZ];
 	char *tmp_sta = 0;
 	char *tmp_end = 0;
+	char type = TYPE_INT; /* default */
 
 	gen_label (lbl1);
 	gen_label (lbl2);
@@ -1329,7 +1359,7 @@ int parse_loop_for()
 	/* First statement */
 	while (!read_sym (';'))
 	{
-		if (!parse_statement ())
+		if (!parse_statement (&type))
 		{
 			return 0;
 		}
@@ -1342,7 +1372,7 @@ int parse_loop_for()
 	gen_cmd_label (lbl1);
 
 	/* Second statement: conditional */
-	if (!parse_expr ())
+	if (!parse_expr (&type))
 	{
 		return 0;
 	}
@@ -1360,7 +1390,7 @@ int parse_loop_for()
 	/* Third statement */
 	while (!read_sym (')'))
 	{
-		if (!parse_statement ())
+		if (!parse_statement (&type))
 		{
 			return 0;
 		}
@@ -1398,6 +1428,7 @@ int parse_loop_while()
 	char lbl2[ID_SZ];
 	char *tmp_sta = 0;
 	char *tmp_end = 0;
+	char type = TYPE_INT; /* default */
 
 	gen_label (lbl1);
 	gen_label (lbl2);
@@ -1415,7 +1446,7 @@ int parse_loop_while()
 
 	gen_cmd_label (lbl1);
 
-	if (!parse_expr ())
+	if (!parse_expr (&type))
 	{
 		return 0;
 	}
@@ -1459,7 +1490,14 @@ int parse_gvar(char type, char* name)
 		return 0;
 	}
 	gen_cmd_label (name);
-	write_str (" .quad ");
+	if (type == TYPE_CHR)
+	{
+		write_str (" .byte ");
+	}
+	else
+	{
+		write_str (" .quad ");
+	}
 	write_strln (num);
 	store_var (gbl_p, type, name);
 	return 1;
@@ -1490,7 +1528,7 @@ int parse_garr(char type, char* name)
 		write_str (" .space ");
 	}
 	write_strln (num);
-	store_var (gbl_p, type, name);
+	store_var (gbl_p, type | TYPE_ARR, name);
 	return 1;
 }
 
@@ -1499,11 +1537,12 @@ int parse_statement()
 	int idx = 0;
 	char id[ID_SZ];
 	char num[ID_SZ];
+	char dst_type = 0;
 	char type = 0;
 
 	if (read_sym ('*'))
 	{
-		if (!parse_operand ())
+		if (!parse_operand (&dst_type))
 		{
 			return 0;
 		}
@@ -1511,11 +1550,11 @@ int parse_statement()
 		{
 			return 0;
 		}
-		if (!parse_expr ())
+		if (!parse_expr (&type))
 		{
 			return 0;
 		}
-		gen_cmd_popi ();
+		gen_cmd_popi (dst_type);
 		return 1;
 	}
 
@@ -1525,7 +1564,7 @@ int parse_statement()
 	else if (read_sym_s ("return"))
 	{
 		/* calculate return value */
-		if (!parse_expr ())
+		if (!parse_expr (&type))
 		{
 			return 0;
 		}
@@ -1568,7 +1607,7 @@ int parse_statement()
 		}
 		return 1;
 	}
-	else if (read_type (&type))
+	else if (read_type (&dst_type))
 	{
 		/* Definition of a local variable */
 		if (!read_id (id))
@@ -1578,13 +1617,13 @@ int parse_statement()
 		}
 		if (read_sym ('='))
 		{
-			if (!parse_expr ())
+			if (!parse_expr (&type))
 			{
 				return 0;
 			}
-			if (find_var (loc_p, id, &type, &idx)
-					|| find_var (gbl_p, id, &type, &idx)
-					|| find_var (arg_p, id, &type, &idx))
+			if (find_var (loc_p, id, &dst_type, &idx)
+					|| find_var (gbl_p, id, &dst_type, &idx)
+					|| find_var (arg_p, id, &dst_type, &idx))
 			{
 				error_log ("duplicate identifier");
 				return 0;
@@ -1597,14 +1636,14 @@ int parse_statement()
 				gen_cmd_dup ();
 
 				/* Allocate and point */
-				store_var (loc_p, type, id);
-				find_var (loc_p, id, &type, &idx);
+				store_var (loc_p, dst_type, id);
+				find_var (loc_p, id, &dst_type, &idx);
 				gen_cmd_pushsf ();
 				gen_cmd_pushni ((idx + 1) * sizeof(long long));
 				gen_cmd_sub ();
 			}
 			gen_cmd_swap ();
-			gen_cmd_popi ();
+			gen_cmd_popi (dst_type);
 		}
 		else if (read_sym ('['))
 		{
@@ -1617,7 +1656,7 @@ int parse_statement()
 			write_strln ("  push %rdi");
 
 			/* Calculate array size and leave it on the stack */
-			if (!parse_expr ())
+			if (!parse_expr (&type))
 			{
 				return 0;
 			}
@@ -1626,7 +1665,8 @@ int parse_statement()
 				return 0;
 			}
 
-			store_var (loc_p, type, id);
+			/* Local arrays are considered pointers */
+			store_var (loc_p, dst_type | TYPE_PTR, id);
 
 			/* Allocate memory for the array */
 			write_strln ("  pop %rax");
@@ -1657,23 +1697,23 @@ int parse_statement()
 	/* Simple variable assignment */
 	else if (read_sym ('='))
 	{
-		if (!parse_expr ())
+		if (!parse_expr (&type))
 		{
 			return 0;
 		}
-		if (find_var (loc_p, id, &type, &idx))
+		if (find_var (loc_p, id, &dst_type, &idx))
 		{
 			gen_cmd_pushsf ();
 			gen_cmd_pushni ((idx + 1) * sizeof(long long));
 			gen_cmd_sub ();
 		}
-		else if (find_var (arg_p, id, &type, &idx))
+		else if (find_var (arg_p, id, &dst_type, &idx))
 		{
 			gen_cmd_pushsf ();
 			gen_cmd_pushni (idx * sizeof(long long));
 			gen_cmd_add ();
 		}
-		else if (find_var (gbl_p, id, &type, &idx))
+		else if (find_var (gbl_p, id, &dst_type, &idx))
 		{
 			gen_cmd_pushl (id);
 		}
@@ -1683,7 +1723,7 @@ int parse_statement()
 			return 0;
 		}
 		gen_cmd_swap ();
-		gen_cmd_popi ();
+		gen_cmd_popi (dst_type);
 	}
 
 	/* Label */
