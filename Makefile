@@ -13,7 +13,10 @@ help:
 	@echo "make test                 - run some functional tests"
 run: all
 	cat $(SRC) | ./cc > $(SRC).s
-	rm $(SRC).s
+	as $(SRC).s -o $(SRC).o
+	ld $(SRC).o -o $(SRC).bin
+	./$(SRC).bin
+	rm $(SRC).s $(SRC).o $(SRC).bin
 clean:
 	rm -f cc
 test:	all
