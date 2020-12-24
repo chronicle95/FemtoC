@@ -1571,13 +1571,13 @@ int parse_statement()
 		/* save it */
 		write_strln ("  pop %rax");
 		/* jump to end of function */
-		idx = 0;
+		idx = 1;
 		while (*(loc_p + idx) != ' ')
 		{
-			*(id + idx) = *(loc_p + idx);
+			*(id + idx - 1) = *(loc_p + idx);
 			idx = idx + 1;
 		}
-		*(id + idx) = 0;
+		*(id + idx - 1) = 0;
 		gen_cmd_jump_x ("__", id, "_end");
 		return 1;
 	}
