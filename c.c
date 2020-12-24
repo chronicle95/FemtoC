@@ -2052,7 +2052,6 @@ int parse_root()
 			break;
 		}
 	}
-	gen_cmd_label ("__the_end");
 	/* At this moment we always return 1
 	 * with no error checks */
 	return 1;
@@ -2069,6 +2068,8 @@ int main()
 	char locals[LOC_SZ];
 	char arguments[ARG_SZ];
 	char globals[GBL_SZ];
+
+	int  temp = 0;
 
 	clear_memory (source, SRC_SZ);
 	clear_memory (result, OUT_SZ);
@@ -2104,7 +2105,12 @@ int main()
 
 	parse_root ();
 
-	gen_start ();
+	if (find_var (gbl_p, "main", (char*) &temp, &temp))
+	{
+		/* only generate prologue when main function defined */
+		gen_start ();
+	}
+
 	puts (result);
 	if (!*src_p)
 	{
