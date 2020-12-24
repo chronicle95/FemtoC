@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 source ./common.sh
 IFILE=$IDIR/smoke
 OFILE=$ODIR/smoke
