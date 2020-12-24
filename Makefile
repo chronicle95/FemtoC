@@ -10,8 +10,14 @@ help:
 	@echo "make run SRC=<filename>   - build & run"
 	@echo "make help                 - show this message"
 	@echo "make clean                - remove redundant files"
+	@echo "make test                 - run some functional tests"
 run: all
 	cat $(SRC) | ./cc > $(SRC).s
 	rm $(SRC).s
 clean:
 	rm -f cc
+test:	all
+	@cd tests; \
+	mkdir -p bin; \
+	./smoke.sh; \
+	./smoke-fail.sh
