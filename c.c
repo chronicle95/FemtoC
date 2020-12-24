@@ -32,6 +32,7 @@ int GBL_SZ = 6400;  /* up to 256 global identifiers (f + v) */
 int ARG_SZ = 200;   /* up to 8 arguments per function */
 
 /* Global variables: Types */
+char TYPE_NONE   = 0;
 char TYPE_INT    = 1;
 char TYPE_CHR    = 2;
 char TYPE_PTR    = 64;
@@ -193,7 +194,7 @@ int write_num(int n)
 	return 1;
 }
 
-int error_log(char *s)
+int write_err(char *s)
 {
 	write_str ("# [ERROR][L ");
 	write_num (line_number);
@@ -435,7 +436,6 @@ int read_type(char *type)
 	}
 	else
 	{
-		error_log ("bad data type");
 		return 0;
 	}
 	if (read_sym ('*'))
@@ -807,20 +807,22 @@ int gen_start()
 * Parse and process functions                                                 *
 ******************************************************************************/
 
-int parse_expr();
-int parse_invoke(char *name)
+int parse_expr(char *type);
+int parse_invoke(char *name, char *ret_type)
 {
 	int argcnt = 0;
 	int n = 0;
 	int len = 0;
 	char *argpos[ARG_SZ / (ID_SZ + 1) + 1];
+	char type = TYPE_INT;
+	*ret_type = TYPE_INT;
 
 	/* use argpos to locate where the output goes */
 	*(argpos + argcnt) = out_p;
 
 	while (1)
 	{
-		if (parse_expr ())
+		if (parse_expr (&type))
 		{
 			argcnt = argcnt + 1;
 			*(argpos + argcnt) = out_p;
@@ -872,6 +874,44 @@ int parse_invoke(char *name)
 		n = n + 1;
 	}
 
+	/* Determine the return type */
+	if (!find_var (gbl_p, name, ret_type, &n))
+	{
+		write_err ("undeclared function");
+		return 0;
+	}
+
+	return 1;
+}
+
+int type_sizeof(char type)
+{
+	if (type == TYPE_CHR) return 1;
+	if (type == TYPE_INT) return 8;
+	if (type & TYPE_PTR) return 8;
+	if (type & TYPE_ARR) return 8;
+	return 0;
+}
+
+int parse_sizeof()
+{
+	char type = TYPE_NONE;
+	if (!read_sym ('('))
+	{
+		write_err ("sizeof ( expected");
+		return 0;
+	}
+	if (!read_type (&type))
+	{
+		write_err ("sizeof bad type");
+		return 0;
+	}
+	if (!read_sym (')'))
+	{
+		write_err ("sizeof ) expected");
+		return 0;
+	}
+	gen_cmd_pushni (type_sizeof (type));
 	return 1;
 }
 
@@ -880,13 +920,35 @@ int parse_operand(char *type)
 	char buf[ID_SZ];
 	char lbl[ID_SZ];
 	int idx = 0;
+	char *tmp = 0;
+	char cast_type = TYPE_NONE;
+
+	/* Type casting */
+	tmp = src_p;
+	if (read_sym ('('))
+	{
+		if (read_type (&cast_type))
+		{
+			if (!read_sym (')'))
+			{
+				write_err ("type cast expecting )");
+				return 0;
+			}
+		}
+		else
+		{
+			/* no type met, ignore what we've read */
+			src_p = tmp;
+		}
+	}
+
 	if (read_sym ('!'))
 	{
-		if (parse_operand(type))
+		if (parse_operand (type))
 		{
 			gen_cmd_not ();
 			*type = TYPE_INT;
-			return 1;
+			goto _parse_operand_good;
 		}
 	}
 	else if (read_sym ('&'))
@@ -913,33 +975,33 @@ int parse_operand(char *type)
 		}
 		else
 		{
-			error_log ("undeclared identifier");
+			write_err ("undeclared identifier");
 			return 0;
 		}
-		*type = TYPE_INT;
-		return 1;
+		*type = TYPE_PTR;
+		goto _parse_operand_good;
 	}
 	else if (read_sym ('~'))
 	{
-		if (parse_operand(type))
+		if (parse_operand (type))
 		{
 			gen_cmd_inv ();
 			*type = TYPE_INT;
-			return 1;
+			goto _parse_operand_good;
 		}
 	}
 	else if (read_sym ('*'))
 	{
-		if (parse_operand(type))
+		if (parse_operand (type))
 		{
 			gen_cmd_pushi (*type);
 			*type = *type & ~TYPE_PTR;
-			return 1;
+			goto _parse_operand_good;
 		}
 	}
 	else if (read_sym ('('))
 	{
-		if (parse_expr ())
+		if (parse_expr (type))
 		{
 			return read_sym (')');
 		}
@@ -956,7 +1018,7 @@ int parse_operand(char *type)
 		gen_cmd_label (buf);
 		gen_cmd_pushl (lbl);
 		*type = TYPE_CHR | TYPE_PTR;
-		return 1;
+		goto _parse_operand_good;
 	}
 	else if (read_sym (39))
 	{
@@ -967,19 +1029,34 @@ int parse_operand(char *type)
 			return 0;
 		}
 		*type = TYPE_CHR;
-		return 1;
+		goto _parse_operand_good;
 	}
 	else if (read_number (buf))
 	{
 		gen_cmd_pushns (buf);
 		*type = TYPE_INT;
-		return 1;
+		goto _parse_operand_good;
+	}
+	else if (read_sym_s ("NULL"))
+	{
+		gen_cmd_pushni (0);
+		*type = TYPE_PTR;
+		goto _parse_operand_good;
+	}
+	else if (read_sym_s ("sizeof"))
+	{
+		if (!parse_sizeof ())
+		{
+			return 0;
+		}
+		*type = TYPE_INT;
+		goto _parse_operand_good;
 	}
 	else if (read_id (buf))
 	{
 		if (read_sym ('('))
 		{
-			if (!parse_invoke (buf))
+			if (!parse_invoke (buf, type))
 			{
 				return 0;
 			}
@@ -1010,7 +1087,7 @@ int parse_operand(char *type)
 				return 0;
 			}
 		}
-		return 1;
+		goto _parse_operand_good;
 	}
 	else if (read_sym ('-'))
 	{
@@ -1019,19 +1096,46 @@ int parse_operand(char *type)
 			gen_cmd_inv ();
 			gen_cmd_pushni (1);
 			gen_cmd_add ();
-			*type = TYPE_INT;
-			return 1;
+			goto _parse_operand_good;
 		}
 	}
 	return 0;
+
+_parse_operand_good:
+	if (cast_type)
+	{
+		*type = cast_type;
+	}
+	return 1;
+}
+
+int pointer_math(char left_type, char right_type)
+{
+	if ((left_type & TYPE_PTR) && !(right_type & TYPE_PTR))
+	{
+		gen_cmd_pushni (type_sizeof (left_type & ~TYPE_PTR));
+		gen_cmd_mul ();
+	}
+	else if (!(left_type & TYPE_PTR) && (right_type & TYPE_PTR))
+	{
+		gen_cmd_swap ();
+		gen_cmd_pushni (type_sizeof (left_type & ~TYPE_PTR));
+		gen_cmd_mul ();
+		gen_cmd_swap ();
+	}
+	return 1;
 }
 
 int parse_expr(char *type)
 {
+	char tmp_type = TYPE_NONE;
+
+	/* At least one operand is a basis for an expression */
 	if (!parse_operand (type))
 	{
 		return 0;
 	}
+
 	/* Any closing brackets, commas and semicolons
 	 * are considered the end of expression */
 	while (!read_sym (',')
@@ -1042,34 +1146,36 @@ int parse_expr(char *type)
 
 		if (read_sym ('+'))
 		{
-			parse_operand (type);
+			parse_operand (&tmp_type);
+			pointer_math (*type, tmp_type);
 			gen_cmd_add ();
 		}
 		else if (read_sym ('-'))
 		{
-			parse_operand (type);
+			parse_operand (&tmp_type);
+			pointer_math (*type, tmp_type);
 			gen_cmd_sub ();
 		}
 		else if (read_sym ('*'))
 		{
-			parse_operand (type);
+			parse_operand (&tmp_type);
 			gen_cmd_mul ();
 		}
 		else if (read_sym ('/'))
 		{
-			parse_operand (type);
+			parse_operand (&tmp_type);
 			gen_cmd_div ();
 		}
 		else if (read_sym ('%'))
 		{
-			parse_operand (type);
+			parse_operand (&tmp_type);
 			gen_cmd_mod ();
 		}
 		else if (read_sym ('='))
 		{
 			if (read_sym ('='))
 			{
-				parse_operand (type);
+				parse_operand (&tmp_type);
 				gen_cmd_cmpeq ();
 			}
 			else
@@ -1081,7 +1187,7 @@ int parse_expr(char *type)
 		{
 			if (read_sym ('='))
 			{
-				if (!parse_operand (type))
+				if (!parse_operand (&tmp_type))
 				{
 					return 0;
 				}
@@ -1089,7 +1195,7 @@ int parse_expr(char *type)
 			}
 			else
 			{
-				if (!parse_operand (type))
+				if (!parse_operand (&tmp_type))
 				{
 					return 0;
 				}
@@ -1100,7 +1206,7 @@ int parse_expr(char *type)
 		{
 			if (read_sym ('='))
 			{
-				if (!parse_operand (type))
+				if (!parse_operand (&tmp_type))
 				{
 					return 0;
 				}
@@ -1108,7 +1214,7 @@ int parse_expr(char *type)
 			}
 			else
 			{
-				if (!parse_operand (type))
+				if (!parse_operand (&tmp_type))
 				{
 					return 0;
 				}
@@ -1121,7 +1227,7 @@ int parse_expr(char *type)
 			{
 				return 0;
 			}
-			if (!parse_operand (type))
+			if (!parse_operand (&tmp_type))
 			{
 				return 0;
 			}
@@ -1131,7 +1237,7 @@ int parse_expr(char *type)
 		{
 			if (read_sym ('&'))
 			{
-				if (!parse_operand (type))
+				if (!parse_operand (&tmp_type))
 				{
 					return 0;
 				}
@@ -1143,7 +1249,7 @@ int parse_expr(char *type)
 			}
 			else
 			{
-				if (!parse_operand (type))
+				if (!parse_operand (&tmp_type))
 				{
 					return 0;
 				}
@@ -1154,7 +1260,7 @@ int parse_expr(char *type)
 		{
 			if (read_sym ('|'))
 			{
-				if (!parse_operand (type))
+				if (!parse_operand (&tmp_type))
 				{
 					return 0;
 				}
@@ -1166,7 +1272,7 @@ int parse_expr(char *type)
 			}
 			else
 			{
-				if (!parse_operand (type))
+				if (!parse_operand (&tmp_type))
 				{
 					return 0;
 				}
@@ -1210,7 +1316,7 @@ int parse_keyword_block()
 	{
 		if (!read_sym ('{'))
 		{
-			error_log ("`{` expected");
+			write_err ("`{` expected");
 			return 0;
 		}
 		write_strln("# ASM {");
@@ -1537,9 +1643,21 @@ int parse_statement()
 	int idx = 0;
 	char id[ID_SZ];
 	char num[ID_SZ];
-	char dst_type = 0;
-	char type = 0;
 
+	char dst_type = TYPE_NONE;
+	char type = TYPE_NONE;
+
+	/* Show line of statement as comment */
+	char *tmp = src_p;
+	write_str ("# St.: ");
+	while ((*tmp != ';') && (*tmp != 10) && (*tmp != '{'))
+	{
+		write_chr (*tmp);
+		tmp = tmp + 1;
+	}
+	write_chr (10);
+
+	/* Assignment by pointer */
 	if (read_sym ('*'))
 	{
 		if (!parse_operand (&dst_type))
@@ -1552,6 +1670,12 @@ int parse_statement()
 		}
 		if (!parse_expr (&type))
 		{
+			return 0;
+		}
+		dst_type = dst_type & ~TYPE_PTR;
+		if (type != dst_type)
+		{
+			write_err ("incompatible type assignment");
 			return 0;
 		}
 		gen_cmd_popi (dst_type);
@@ -1585,7 +1709,7 @@ int parse_statement()
 	{
 		if (!read_id (id))
 		{
-			error_log ("label expected");
+			write_err ("label expected");
 			return 0;
 		}
 		gen_cmd_jump_x ("__", id, "");
@@ -1612,7 +1736,7 @@ int parse_statement()
 		/* Definition of a local variable */
 		if (!read_id (id))
 		{
-			error_log ("identifier expected");
+			write_err ("identifier expected");
 			return 0;
 		}
 		if (read_sym ('='))
@@ -1625,7 +1749,7 @@ int parse_statement()
 					|| find_var (gbl_p, id, &dst_type, &idx)
 					|| find_var (arg_p, id, &dst_type, &idx))
 			{
-				error_log ("duplicate identifier");
+				write_err ("duplicate identifier");
 				return 0;
 			}
 			else
@@ -1674,7 +1798,7 @@ int parse_statement()
 		}
 		else
 		{
-			error_log ("definition = or [ expected");
+			write_err ("definition = or [ expected");
 			return 0;
 		}
 		return 1;
@@ -1683,7 +1807,7 @@ int parse_statement()
 	/* Otherwise check for identifier */
 	else if (!read_id (id))
 	{
-		error_log ("identifier expected");
+		write_err ("identifier expected");
 		return 0;
 	}
 
@@ -1691,7 +1815,7 @@ int parse_statement()
 	/* Function call */
 	if (read_sym ('('))
 	{
-		return parse_invoke (id);
+		return parse_invoke (id, &type);
 	}
 
 	/* Simple variable assignment */
@@ -1719,7 +1843,7 @@ int parse_statement()
 		}
 		else
 		{
-			error_log ("undefined identifier");
+			write_err ("undefined identifier");
 			return 0;
 		}
 		gen_cmd_swap ();
@@ -1734,7 +1858,7 @@ int parse_statement()
 
 	else
 	{
-		error_log ("bad statement");
+		write_err ("bad statement");
 		return 0;
 	}
 
@@ -1750,13 +1874,13 @@ int parse_argslist()
 	{
 		if (!read_type (&type))
 		{
-			error_log ("args: type expected");
+			write_err ("args: type expected");
 			return 0;
 		}
 
 		if (!read_id (id))
 		{
-			error_log ("args: identifier expected");
+			write_err ("args: identifier expected");
 			return 0;
 		}
 
@@ -1851,7 +1975,7 @@ int parse_preprocessor(char *ppname)
 	}
 	else
 	{
-		error_log ("unsupported preprocessor. use: include,define");
+		write_err ("unsupported preprocessor. use: include,define");
 		return 0;
 	}
 	/* Find new line */
@@ -1874,7 +1998,7 @@ int parse_root()
 		{
 			if (!read_id (id))
 			{
-				error_log ("preprocessor identifier expected");
+				write_err ("preprocessor identifier expected");
 				return 0;
 			}
 			if (!parse_preprocessor(id))
@@ -1890,12 +2014,12 @@ int parse_root()
 		/* Everything else must start with a type and id */
 		if (!read_type (&type))
 		{
-			error_log ("type expected");
+			write_err ("type expected");
 			return 0;
 		}
 		if (!read_id (id))
 		{
-			error_log ("identifier expected");
+			write_err ("identifier expected");
 			return 0;
 		}
 		/* A function declaration */
@@ -1924,7 +2048,7 @@ int parse_root()
 		}
 		else
 		{
-			error_log ("function or variable definition expected");
+			write_err ("function or variable definition expected");
 			break;
 		}
 	}

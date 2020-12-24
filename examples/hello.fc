@@ -17,7 +17,7 @@ int puts (char *s)
 	while (*s)
 	{
 		putchar (*s);
-		s = s + 8;
+		s = s + 1;
 	}
 	putchar (10);
 }

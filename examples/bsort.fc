@@ -31,7 +31,7 @@ int puts (char *s)
 	while (*s)
 	{
 		putchar (*s);
-		s = s + 8;
+		s = s + 1;
 	}
 }
 
@@ -42,15 +42,15 @@ int gets (char *s)
 	{
 		c = getchar ();
 		*s = c;
-		s = s + 8;
+		s = s + 1;
 	}
 	*s = 0;
 }
 
 int rtrim(char *s)
 {
-	while (*s) s = s + 8;
-	*(s - 8) = 0;
+	while (*s) s = s + 1;
+	*(s - 1) = 0;
 }
 
 int bubble(char *s)
@@ -60,23 +60,23 @@ int bubble(char *s)
 	int tmp = 0;
 
 	/* find string length */
-	while (*(s + i)) i = i + 8;
+	while (*(s + i)) i = i + 1;
 
 	/* sort the string */
-	while (i > 8)
+	while (i > 1)
 	{
 		j = 0;
-		while (j < (i - 8))
+		while (j < (i - 1))
 		{
-			if (*(s+j) > *(s+j+8))
+			if (*(s+j) > *(s+j+1))
 			{
-				tmp = *(s+j+8);
-				*(s+j+8) = *(s+j);
+				tmp = *(s+j+1);
+				*(s+j+1) = *(s+j);
 				*(s+j) = tmp;
 			}
-			j = j + 8;
+			j = j + 1;
 		}
-		i = i - 8;
+		i = i - 1;
 	}
 }
 
