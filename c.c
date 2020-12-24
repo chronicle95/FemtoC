@@ -38,28 +38,28 @@ char TYPE_PTR    = 64;
 char TYPE_ARR    = 128;
 
 /* Global variables: Pointers */
-char* src_p = 0; /* source code pointer
+char *src_p = 0; /* source code pointer
 		    points to current location */
-char* out_p = 0; /* output pointer
+char *out_p = 0; /* output pointer
 		    points to current location */
-char* loc_p = 0; /* function locals list.
+char *loc_p = 0; /* function locals list.
 		    points to the beginning.
 		    record goes as follow:
 
 		    (t)f-var0 (t)f-var1 (t)f-var2 ... */
-char* arg_p = 0; /* function arguments list.
+char *arg_p = 0; /* function arguments list.
 		    points to the beginning.
 		    record goes as follow:
 
 		    (t)f-arg0 (t)f-arg1 (t)f-arg2 ... */
-char* gbl_p = 0; /* global variable list.
+char *gbl_p = 0; /* global variable list.
 		    points to the beginning.
 		    record goes as follow:
 
 		    (t)var0 (t)var1 ... */
 int lbl_cnt = 0;     /* Label counter. Used for temporary labels */
-char* lbl_sta = 0;   /* Nearest loop start label */
-char* lbl_end = 0;   /* Nearest loop end label */
+char *lbl_sta = 0;   /* Nearest loop start label */
+char *lbl_end = 0;   /* Nearest loop end label */
 int line_number = 0; /* Current source line number */
 
 /******************************************************************************
@@ -113,7 +113,7 @@ int gen_label(char *dst)
 	return 1;
 }
 
-int strcomp(char* a, char* b)
+int strcomp(char *a, char *b)
 {
 	if ((a == 0) && (b == 0))
 	{
@@ -422,7 +422,7 @@ int read_str_const()
 	return 1;
 }
 
-int read_type(char* type)
+int read_type(char *type)
 {
 	read_space ();
 	if (read_sym_s ("int"))
@@ -445,9 +445,9 @@ int read_type(char* type)
 	return 1;
 }
 
-int read_id(char* dst)
+int read_id(char *dst)
 {
-	char* dp = dst;
+	char *dp = dst;
 
 	read_space ();
 	if (!is_id0 (*src_p))
@@ -465,7 +465,7 @@ int read_id(char* dst)
 	return 1;
 }
 
-int read_number(char* dst)
+int read_number(char *dst)
 {
 	read_space ();
 
@@ -1477,7 +1477,7 @@ int parse_loop_while()
 	return 1;
 }
 
-int parse_gvar(char type, char* name)
+int parse_gvar(char type, char *name)
 {
 	char num[ID_SZ];
 	read_space ();
@@ -1503,7 +1503,7 @@ int parse_gvar(char type, char* name)
 	return 1;
 }
 
-int parse_garr(char type, char* name)
+int parse_garr(char type, char *name)
 {
 	char num[ID_SZ];
 	if (!read_number (num))
@@ -1771,7 +1771,7 @@ int parse_argslist()
 	return 1;
 }
 
-int parse_func(char* name)
+int parse_func(char *name)
 {
 	char *save = out_p;
 
