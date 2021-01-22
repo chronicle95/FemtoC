@@ -782,7 +782,7 @@ int gen_start()
 	puts ("# GNU Assembler [as, x86_64]");
 	puts (" .data");
 	puts ("__mema:");
-	puts (" .space 16777216");
+	puts (" .space 4194304");
 	puts ("__mema_end:");
 
 	/* Initialize data and stack pointers */
