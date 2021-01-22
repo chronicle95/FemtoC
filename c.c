@@ -530,7 +530,7 @@ int gen_cmd_pushi(char type)
 	write_strln ("  pop %rax");
 	if (type == TYPE_CHR)
 	{
-		write_strln ("  movzbl (%rax), %rax");
+		write_strln ("  movzbq (%rax), %rax");
 	}
 	else
 	{
@@ -546,7 +546,7 @@ int gen_cmd_popi(char type)
 	write_strln ("  pop %rbx");
 	if (type == TYPE_CHR)
 	{
-		write_strln ("  movzlb %rax, (%rbx)");
+		write_strln ("  movzqb %rax, (%rbx)");
 	}
 	else
 	{
@@ -629,7 +629,7 @@ int gen_cmd_push_static(char *name, char type)
 {
 	if (type == TYPE_CHR)
 	{
-		write_str ("  movzbl ");
+		write_str ("  movzbq ");
 	}
 	else
 	{
@@ -994,8 +994,8 @@ int parse_operand(char *type)
 	{
 		if (parse_operand (type))
 		{
-			gen_cmd_pushi (*type);
 			*type = *type & ~TYPE_PTR;
+			gen_cmd_pushi (*type);
 			goto _parse_operand_good;
 		}
 	}
