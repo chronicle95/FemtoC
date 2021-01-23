@@ -1,6 +1,6 @@
 /* Bubblesort example for FemtoC */
 
-char getchar ()
+char getchar()
 {
 	char c = 0;
 	asm
@@ -14,7 +14,7 @@ char getchar ()
 	return c;
 }
 
-int putchar (char c)
+int putchar(char c)
 {
 	asm
 	{
@@ -26,7 +26,7 @@ int putchar (char c)
 	}
 }
 
-int puts (char *s)
+int puts(char *s)
 {
 	while (*s)
 	{
@@ -35,7 +35,7 @@ int puts (char *s)
 	}
 }
 
-int gets (char *s)
+int gets(char *s)
 {
 	char c = 0;
 	while (c != 10)

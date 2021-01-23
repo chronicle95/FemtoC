@@ -1,6 +1,6 @@
 /* Hello World example for FemtoC */
 
-int putchar (char c)
+int putchar(char c)
 {
 	asm
 	{
@@ -12,7 +12,7 @@ int putchar (char c)
 	}
 }
 
-int puts (char *s)
+int puts(char *s)
 {
 	while (*s)
 	{
