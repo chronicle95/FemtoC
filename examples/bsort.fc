@@ -5,9 +5,9 @@ char getchar()
 	char c = 0;
 	asm
 	{
-	movq $3, %rax        # syscall = read
-	movq $0, %rbx        # file = stdin
-	movq -24(%rbp), %rcx # buffer = &c
+	movq $0, %rax        # syscall = read
+	movq $0, %rdi        # file = stdin
+	leaq -24(%rbp), %rsi # buffer = &c
 	movq $1, %rdx        # size = 1
 	syscall
 	}
