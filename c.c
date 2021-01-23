@@ -760,6 +760,7 @@ int gen_cmd_div()
 {
 	write_strln ("  pop %rbx");
 	write_strln ("  pop %rax");
+	write_strln ("  xor %rdx,%rdx");
 	write_strln ("  divq %rbx");
 	write_strln ("  push %rax");
 	return 1;
@@ -769,6 +770,7 @@ int gen_cmd_mod()
 {
 	write_strln ("  pop %rbx");
 	write_strln ("  pop %rax");
+	write_strln ("  xor %rdx,%rdx");
 	write_strln ("  divq %rbx");
 	write_strln ("  push %rdx");
 	return 1;
