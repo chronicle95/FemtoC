@@ -546,7 +546,7 @@ int gen_cmd_popi(char type)
 	write_strln ("  pop %rbx");
 	if (type == TYPE_CHR)
 	{
-		write_strln ("  movzqb %rax, (%rbx)");
+		write_strln ("  mov %al, (%rbx)");
 	}
 	else
 	{

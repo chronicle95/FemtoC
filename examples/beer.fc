@@ -20,7 +20,7 @@ int putn(int n) {
 		return 0;
 	}
 	while (n > 0) {
-		*ptr = n % 10 + '0';
+		*ptr = (char) n % 10 + '0';
 		ptr = ptr + 1;
 		n = n / 10;
 	}
