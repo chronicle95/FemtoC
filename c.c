@@ -590,7 +590,6 @@ int gen_cmd_call(char *name)
 	write_strln (name);
 	/* Restore old base from stack */
 	write_strln ("  pop %rbp");
-	write_strln ("  movq %rbp, %rsp");
 	return 1;
 }
 
