@@ -1575,7 +1575,10 @@ int parse_func(char *name) {
 	/* Allow for declarations */
 
 	if (read_sym (';')) {
+		/* Nothing to be done here */
 		out_p = save;
+		/* Erase argument list */
+		clear_memory (arg_p, ARG_SZ);
 		return 1;
 	}
 
