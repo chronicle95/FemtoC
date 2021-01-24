@@ -83,7 +83,7 @@ int clear_memory(char *p, int size)
 {
 	while (size > 0)
 	{
-		*p = 0;
+		*p = (char) 0;
 		p = p + 1;
 		size = size - 1;
 	}
@@ -109,7 +109,7 @@ int gen_label(char *dst)
 			n = n / 26;
 		}
 	}
-	*dst = 0;
+	*dst = (char) 0;
 	lbl_cnt = lbl_cnt + 1;
 	return 1;
 }
@@ -144,7 +144,7 @@ int write_chr(char c)
 {
 	*out_p = c;
 	out_p = out_p + 1;
-	*out_p = 0;
+	*out_p = (char) 0;
 	return 1;
 }
 
@@ -218,9 +218,9 @@ int write_numln(int n)
  * variable.
  * End of list is marked with null-character.
  *
- * @in ptr pointer to a varlist
- * @in type is variable type
- * @in s pointer to a null-terminated name under question
+ * @param[in] ptr pointer to a varlist
+ * @param[in] type is variable type
+ * @param[in] s pointer to a null-terminated name under question
  * @returns 1
  */
 int store_var(char *ptr, char type, char *s)
@@ -241,62 +241,59 @@ int store_var(char *ptr, char type, char *s)
 		s = s + 1;
 		fp = fp + 1;
 	}
-	/* null-terminate */
+	/* space and null-terminate */
 	*fp = ' ';
 	fp = fp + 1;
-	*fp = 0;
+	*fp = (char) 0;
 	return 1;
 }
 
 /**
  * Finds a variable index and type in a varlist
  *
- * @in ptr pointer to a varlist
- * @in s pointer to a null-terminated name under question
- * @out t variable type
- * @out i variable name index
+ * @param[in] ptr pointer to a varlist
+ * @param[in] s pointer to a null-terminated name under question
+ * @param[out] t variable type
+ * @param[out] i variable name index
  * @returns 1 on success, 0 if not found
  */
 int find_var(char *ptr, char *s, char *t, int *i)
 {
-	char *sp = s;
+	char *sp = NULL;
 	char *fp = ptr;
 	char tt = 0;
+	char no_match = 0;
 	*i = 0;
 
 	while (*fp)
 	{
-		if (sp == s)
+		/* read type */
+		tt = *fp;
+		fp = fp + 1;
+		/* read and check id */
+		sp = s;
+		no_match = 0;
+		while (*fp != ' ')
 		{
-			tt = *fp;
+			if (*fp == *sp)
+			{
+				sp = sp + 1;
+			}
+			else
+			{
+				no_match = 1;
+			}
 			fp = fp + 1;
 		}
-
-		if (*fp == *sp)
-		{
-			sp = sp + 1;
-		}
-		else
-		{
-			sp = s;
-			while (*fp != ' ')
-			{
-				fp = fp + 1;
-			}
-		}
-
-		if (*sp == 0)
+		/* match? */
+		if ((*sp == 0) && !no_match)
 		{
 			*t = tt;
 			return 1;
 		}
-
-		if (*fp == ' ')
-		{
-			*i = *i + 1;
-		}
-
+		/* skip space and roll over to next var */
 		fp = fp + 1;
+		*i = *i + 1;
 	}
 
 	*i = -1;
@@ -426,6 +423,10 @@ int read_str_const()
 int read_type(char *type)
 {
 	read_space ();
+	if (read_sym ('*'))
+	{
+		return 0;
+	}
 	if (read_sym_s ("int"))
 	{
 		*type = TYPE_INT;
@@ -460,7 +461,7 @@ int read_id(char *dst)
 		dp = dp + 1;
 		src_p = src_p + 1;
 	}
-	*dp = 0;
+	*dp = (char) 0;
 
 	return 1;
 }
@@ -481,7 +482,7 @@ int read_number(char *dst)
 		src_p = src_p + 1;
 	}
 
-	*dst = 0;
+	*dst = (char) 0;
 	return 1;
 }
 
