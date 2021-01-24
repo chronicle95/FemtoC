@@ -30,6 +30,7 @@ int OUT_SZ = 65000; /* up to ~5500 lines of assembly output */
 int LOC_SZ = 800;   /* up to 32 local variables */
 int GBL_SZ = 6400;  /* up to 256 global identifiers (f + v) */
 int ARG_SZ = 200;   /* up to 8 arguments per function */
+int LINE_SZ = 80;   /* assume line size for assembly */
 
 /* Global variables: Types */
 char TYPE_NONE   = 0;
@@ -62,6 +63,7 @@ int lbl_cnt = 0;     /* Label counter. Used for temporary labels */
 char *lbl_sta = 0;   /* Nearest loop start label */
 char *lbl_end = 0;   /* Nearest loop end label */
 int line_number = 0; /* Current source line number */
+char *last_str = 0;  /* Last output string */
 
 /******************************************************************************
 * Utility functions                                                           *
@@ -133,10 +135,14 @@ int write_chr(char c) {
 }
 
 int write_str(char *s) {
+	char *last = last_str;
 	while (*s) {
 		write_chr (*s);
+		*last = *s;
+		last = last + 1;
 		s = s + 1;
 	}
+	*last = (char) 0;
 	return 1;
 }
 
@@ -420,8 +426,17 @@ int read_number(char *dst) {
 * Code generation functions                                                   *
 ******************************************************************************/
 
+int _gen_cmd_pop_rax() {
+	if (!strcomp (last_str, "  push %rax")) {
+		write_strln ("  pop %rax");
+	} else {
+		out_p = out_p - 12;
+	}
+	return 1;
+}
+
 int gen_cmd_swap() {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	write_strln ("  pop %rbx");
 	write_strln ("  push %rax");
 	write_strln ("  push %rbx");
@@ -453,7 +468,7 @@ int gen_cmd_pushl(char *name) {
 }
 
 int gen_cmd_pushi(char type) {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	if (type == TYPE_CHR) {
 		write_strln ("  movzbq (%rax), %rax");
 	} else {
@@ -464,7 +479,7 @@ int gen_cmd_pushi(char type) {
 }
 
 int gen_cmd_popi(char type) {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	write_strln ("  pop %rbx");
 	if (type == TYPE_CHR) {
 		write_strln ("  mov %al, (%rbx)");
@@ -475,14 +490,14 @@ int gen_cmd_popi(char type) {
 }
 
 int gen_cmd_inv() {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	write_strln ("  xor $ffffffffffffffff, %rax");
 	write_strln ("  push %rax");
 	return 1;
 }
 
 int gen_cmd_add() {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	write_strln ("  pop %rbx");
 	write_strln ("  add %rbx, %rax");
 	write_strln ("  push %rax");
@@ -528,7 +543,7 @@ int gen_cmd_jump_x(char *prefix, char *name, char *suffix) {
 }
 
 int gen_cmd_nzjump(char *name) {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	write_strln ("  cmpq $0, %rax");
 	write_str ("  jne ");
 	write_strln (name);
@@ -548,7 +563,7 @@ int gen_cmd_push_static(char *name, char type) {
 }
 
 int gen_cmd_pop_static(char *name, char type) {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	write_str ("  movq %rax, ");
 	write_str (name);
 	write_strln ("(%rip)");
@@ -568,7 +583,7 @@ int gen_cmd_label(char *name) {
 }
 
 int gen_cmd_not() {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	write_strln ("  or %rax, %rax");
 	write_strln ("  sete %al");
 	write_strln ("  push %rax");
@@ -576,7 +591,7 @@ int gen_cmd_not() {
 }
 
 int gen_cmd_and() {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	write_strln ("  pop %rbx");
 	write_strln ("  and %rbx, %rax");
 	write_strln ("  push %rax");
@@ -584,7 +599,7 @@ int gen_cmd_and() {
 }
 
 int gen_cmd_or() {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	write_strln ("  pop %rbx");
 	write_strln ("  or %rbx, %rax");
 	write_strln ("  push %rax");
@@ -592,7 +607,7 @@ int gen_cmd_or() {
 }
 
 int gen_cmd_dup() {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	write_strln ("  push %rax");
 	write_strln ("  push %rax");
 	return 1;
@@ -604,7 +619,7 @@ int gen_cmd_drop() {
 }
 
 int _gen_cmd_cmp(char *cond) {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	write_strln ("  pop %rbx");
 	write_strln ("  xor %rdx, %rdx");
 	write_strln ("  cmp %rax, %rbx");
@@ -640,7 +655,7 @@ int gen_cmd_cmpge() {
 }
 
 int gen_cmd_mul() {
-	write_strln ("  pop %rax");
+	_gen_cmd_pop_rax ();
 	write_strln ("  pop %rbx");
 	write_strln ("  mulq %rbx");
 	write_strln ("  push %rax");
@@ -1374,7 +1389,7 @@ int parse_statement() {
 			return 0;
 		}
 		/* save it */
-		write_strln ("  pop %rax");
+		_gen_cmd_pop_rax ();
 		/* jump to end of function */
 		idx = 1;
 		while (*(loc_p + idx) != ' ') {
@@ -1452,7 +1467,7 @@ int parse_statement() {
 			store_var (loc_p, dst_type | TYPE_PTR, id);
 
 			/* Allocate memory for the array */
-			write_strln ("  pop %rax");
+			_gen_cmd_pop_rax ();
 			write_strln ("  add %rax, %rdi");
 		} else {
 			write_err ("definition = or [ expected");
@@ -1676,6 +1691,7 @@ int main() {
 	char locals[LOC_SZ];
 	char arguments[ARG_SZ];
 	char globals[GBL_SZ];
+	char last_written_line[LINE_SZ];
 
 	int  temp = 0;
 
@@ -1690,6 +1706,7 @@ int main() {
 	loc_p = locals;
 	arg_p = arguments;
 	gbl_p = globals;
+	last_str = last_written_line;
 
 	while (1) {
 		/* Read by character */
