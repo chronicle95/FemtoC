@@ -1,9 +1,7 @@
 /* Hello World example for FemtoC */
 
-int putchar(char c)
-{
-	asm
-	{
+int putchar(char c) {
+	asm {
 	movq $1, %rax        # syscall = write
 	movq $1, %rdi        # file = stdout
 	leaq 8(%rbp), %rsi   # buffer = &c
@@ -12,17 +10,14 @@ int putchar(char c)
 	}
 }
 
-int puts(char *s)
-{
-	while (*s)
-	{
+int puts(char *s) {
+	while (*s) {
 		putchar (*s);
 		s = s + 1;
 	}
 	putchar (10);
 }
 
-int main()
-{
+int main() {
 	puts ("Hello World!");
 }
