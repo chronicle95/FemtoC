@@ -22,6 +22,7 @@ int parse_statement();
 int parse_loop_for();
 int parse_loop_while();
 int parse_conditional();
+int parse_expr(char *type);
 
 /* Global variables: Limits */
 int ID_SZ  = 32;    /* maximum identifier length */
@@ -40,28 +41,25 @@ char TYPE_PTR    = 64;
 char TYPE_ARR    = 128;
 
 /* Global variables: Pointers */
-char *src_p = 0; /* source code pointer
-		    points to current location */
-char *out_p = 0; /* output pointer
-		    points to current location */
-char *loc_p = 0; /* function locals list.
-		    points to the beginning.
-		    record goes as follow:
+char *src_p = 0; /* source code read pointer */
+char *out_p = 0; /* assembly output write pointer */
 
-		    (t)f-var0 (t)f-var1 (t)f-var2 ... */
-char *arg_p = 0; /* function arguments list.
-		    points to the beginning.
-		    record goes as follow:
+/* Global variables: Namespaces
+ * Each namespace is a list of records, represented as a byte array.
+ * Each record has the following format: [Type][Name]
+ * where Type is a single byte flag and Name is variable length character
+ * string with space character in the end. End of namespace is marked
+ * with null character. */
+char *loc_p = 0; /* function locals list */
+char *arg_p = 0; /* function arguments list */
+char *gbl_p = 0; /* global variable list */
 
-		    (t)f-arg0 (t)f-arg1 (t)f-arg2 ... */
-char *gbl_p = 0; /* global variable list.
-		    points to the beginning.
-		    record goes as follow:
-
-		    (t)var0 (t)var1 ... */
+/* Global variables: Loops work area */
 int lbl_cnt = 0;     /* Label counter. Used for temporary labels */
 char *lbl_sta = 0;   /* Nearest loop start label */
 char *lbl_end = 0;   /* Nearest loop end label */
+
+/* Global variables: Misc */
 int line_number = 0; /* Current source line number */
 char *last_str = 0;  /* Last output string */
 
@@ -631,27 +629,27 @@ int _gen_cmd_cmp(char *cond) {
 }
 
 int gen_cmd_cmpeq() {
-	return _gen_cmd_cmp("e");
+	return _gen_cmd_cmp ("e");
 }
 
 int gen_cmd_cmpne() {
-	return _gen_cmd_cmp("ne");
+	return _gen_cmd_cmp ("ne");
 }
 
 int gen_cmd_cmplt() {
-	return _gen_cmd_cmp("l");
+	return _gen_cmd_cmp ("l");
 }
 
 int gen_cmd_cmple() {
-	return _gen_cmd_cmp("le");
+	return _gen_cmd_cmp ("le");
 }
 
 int gen_cmd_cmpgt() {
-	return _gen_cmd_cmp("g");
+	return _gen_cmd_cmp ("g");
 }
 
 int gen_cmd_cmpge() {
-	return _gen_cmd_cmp("ge");
+	return _gen_cmd_cmp ("ge");
 }
 
 int gen_cmd_mul() {
@@ -701,7 +699,7 @@ int gen_start() {
 	puts ("  call main");
 
 	/* Call exit(0) */
-	puts ("  movq %rax, %rdi           # rc = 0");
+	puts ("  movq %rax, %rdi           # return code = %rax");
 	puts ("  movq $60, %rax            # call = EXIT");
 	puts ("  syscall");
 	return 1;
@@ -711,7 +709,6 @@ int gen_start() {
 * Parse and process functions                                                 *
 ******************************************************************************/
 
-int parse_expr(char *type);
 int parse_invoke(char *name, char *ret_type) {
 	int argcnt = 0;
 	int n = 0;
@@ -1573,11 +1570,10 @@ int parse_func(char *name) {
 	}
 
 	/* Allow for declarations */
-
 	if (read_sym (';')) {
 		/* Nothing to be done here */
 		out_p = save;
-		/* Erase argument list */
+		/* Erase arguments list */
 		clear_memory (arg_p, ARG_SZ);
 		return 1;
 	}
@@ -1634,7 +1630,7 @@ int parse_root() {
 	char type = 0;
 
 	while (*src_p) {
-		/* Preprocessor */
+		/* Preprocessor mockup (allows the parser to ignore pp) */
 		if (read_sym ('#')) {
 			if (!read_id (id)) {
 				write_err ("preprocessor identifier expected");
@@ -1657,7 +1653,7 @@ int parse_root() {
 			write_err ("identifier expected");
 			return 0;
 		}
-		/* A function declaration */
+		/* Function declaration */
 		if (read_sym ('(')) {
 			if (!parse_func (id)) {
 				break;
@@ -1694,7 +1690,7 @@ int main() {
 	char locals[LOC_SZ];
 	char arguments[ARG_SZ];
 	char globals[GBL_SZ];
-	char last_written_line[LINE_SZ];
+	char last_written_str[LINE_SZ];
 
 	int  temp = 0;
 
@@ -1709,7 +1705,7 @@ int main() {
 	loc_p = locals;
 	arg_p = arguments;
 	gbl_p = globals;
-	last_str = last_written_line;
+	last_str = last_written_str;
 
 	while (1) {
 		/* Read by character */
@@ -1728,6 +1724,7 @@ int main() {
 	*src_p = 0;
 	src_p = source;
 
+	/* Here we go */
 	parse_root ();
 
 	if (find_var (gbl_p, "main", (char*) &temp, &temp)) {
