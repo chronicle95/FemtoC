@@ -37,7 +37,9 @@ int LINE_SZ = 80;   /* assume line size for assembly */
 char TYPE_NONE   = 0;
 char TYPE_INT    = 1;
 char TYPE_CHR    = 2;
-char TYPE_PTR    = 64;
+char TYPE_PTR    = 96; /* mask */
+char TYPE_PTR0   = 32;
+char TYPE_PTR1   = 64;
 char TYPE_ARR    = 128;
 
 /* Global variables: Pointers */
@@ -368,7 +370,24 @@ int read_str_const() {
 	return 1;
 }
 
+int type_reference(char type) {
+	if ((type & TYPE_PTR) == TYPE_PTR) {
+		write_err ("depth of reference exceeded");
+		return type;
+	}
+	return type + TYPE_PTR0;
+}
+
+int type_dereference(char type) {
+	if ((type & TYPE_PTR) == 0) {
+		write_err ("can't dereference a non-pointer");
+		return type;
+	}
+	return type - TYPE_PTR0;
+}
+
 int read_type(char *type) {
+	int ref_depth = 0;
 	read_space ();
 	if (read_sym ('*')) {
 		return 0;
@@ -380,8 +399,13 @@ int read_type(char *type) {
 	} else {
 		return 0;
 	}
-	if (read_sym ('*')) {
-		*type = *type | TYPE_PTR;
+	while (ref_depth < 3) {
+		if (read_sym ('*')) {
+			*type = type_reference (*type);
+			ref_depth = ref_depth + 1;
+		} else {
+			break;
+		}
 	}
 	return 1;
 }
@@ -842,7 +866,7 @@ int parse_operand(char *type) {
 			write_err ("undeclared identifier");
 			return 0;
 		}
-		*type = TYPE_PTR;
+		*type = type_reference (*type);
 		goto _parse_operand_good;
 	} else if (read_sym ('~')) {
 		if (parse_operand (type)) {
@@ -852,7 +876,7 @@ int parse_operand(char *type) {
 		}
 	} else if (read_sym ('*')) {
 		if (parse_operand (type)) {
-			*type = *type & ~TYPE_PTR;
+			*type = type_dereference (*type);
 			gen_cmd_pushi (*type);
 			goto _parse_operand_good;
 		}
@@ -870,7 +894,7 @@ int parse_operand(char *type) {
 		write_strln (" 0");
 		gen_cmd_label (buf);
 		gen_cmd_pushl (lbl);
-		*type = TYPE_CHR | TYPE_PTR;
+		*type = type_reference (TYPE_CHR);
 		goto _parse_operand_good;
 	} else if (read_sym (39)) {
 		gen_cmd_pushni (*src_p);
@@ -886,7 +910,7 @@ int parse_operand(char *type) {
 		goto _parse_operand_good;
 	} else if (read_sym_s ("NULL")) {
 		gen_cmd_pushni (0);
-		*type = TYPE_PTR;
+		*type = type_reference (TYPE_NONE);
 		goto _parse_operand_good;
 	} else if (read_sym_s ("sizeof")) {
 		if (!parse_sizeof ()) {
@@ -937,11 +961,11 @@ _parse_operand_good:
 
 int pointer_math(char left_type, char right_type) {
 	if ((left_type & TYPE_PTR) && !(right_type & TYPE_PTR)) {
-		gen_cmd_pushni (type_sizeof (left_type & ~TYPE_PTR));
+		gen_cmd_pushni (type_sizeof (type_dereference (left_type)));
 		gen_cmd_mul ();
 	} else if (!(left_type & TYPE_PTR) && (right_type & TYPE_PTR)) {
 		gen_cmd_swap ();
-		gen_cmd_pushni (type_sizeof (left_type & ~TYPE_PTR));
+		gen_cmd_pushni (type_sizeof (type_dereference (left_type)));
 		gen_cmd_mul ();
 		gen_cmd_swap ();
 	}
@@ -1366,7 +1390,7 @@ int parse_statement() {
 		if (!parse_expr (&type)) {
 			return 0;
 		}
-		dst_type = dst_type & ~TYPE_PTR;
+		dst_type = type_dereference (dst_type);
 		if (type != dst_type) {
 			write_err ("incompatible type assignment");
 			return 0;
@@ -1469,7 +1493,7 @@ int parse_statement() {
 			}
 
 			/* Local arrays are considered pointers */
-			store_var (loc_p, dst_type | TYPE_PTR, id);
+			store_var (loc_p, type_reference (dst_type), id);
 
 			/* Allocate memory for the array */
 			_gen_cmd_pop_rax ();
