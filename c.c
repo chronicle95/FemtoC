@@ -1330,11 +1330,9 @@ int parse_garr(char type, char *name) {
 		return 0;
 	}
 	gen_cmd_label (name);
-	if (type != TYPE_CHR) {
-		write_str (" .space 8*");
-	} else {
-		write_str (" .space ");
-	}
+	write_str (" .space ");
+	write_num (type_sizeof (type));
+	write_str ("*");
 	write_strln (num);
 	store_var (gbl_p, type | TYPE_ARR, name);
 	return 1;
@@ -1452,12 +1450,22 @@ int parse_statement() {
 			/* Initialize array pointer */
 			write_strln ("  push %rdi");
 
-			/* Calculate array size and leave it on the stack */
+			/* Calculate array length and leave it on the stack */
 			if (!parse_expr (&type)) {
 				return 0;
 			}
 			if (!read_sym (']')) {
 				return 0;
+			}
+
+			/* Derive array size from length and element type */
+			if (type_sizeof (dst_type) > 1)
+			{
+				write_str ("  movq $");
+				write_num (type_sizeof (dst_type));
+				write_strln (", %rax");
+				write_strln ("  push %rax");
+				gen_cmd_mul ();
 			}
 
 			/* Local arrays are considered pointers */
