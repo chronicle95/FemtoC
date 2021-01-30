@@ -370,7 +370,7 @@ int read_str_const() {
 	return 1;
 }
 
-int type_reference(char type) {
+char type_reference(char type) {
 	if ((type & TYPE_PTR) == TYPE_PTR) {
 		write_err ("depth of reference exceeded");
 		return type;
@@ -378,7 +378,7 @@ int type_reference(char type) {
 	return type + TYPE_PTR0;
 }
 
-int type_dereference(char type) {
+char type_dereference(char type) {
 	if ((type & TYPE_PTR) == 0) {
 		write_err ("can't dereference a non-pointer");
 		return type;
@@ -1576,16 +1576,16 @@ int parse_argslist() {
 	return 1;
 }
 
-int parse_func(char *name) {
+int parse_func(char type, char *name) {
 	char *save = out_p;
 
 	/* Put function name to locals and arguments lists
 	 * so that the first entry index starts with 1 */
-	store_var (loc_p, TYPE_INT, name);
-	store_var (arg_p, TYPE_INT, name);
+	store_var (loc_p, type, name);
+	store_var (arg_p, type, name);
 
 	/* Put function name to globals list */
-	store_var (gbl_p, TYPE_INT, name);
+	store_var (gbl_p, type, name);
 
 	/* Put label */
 	write_str (name);
@@ -1687,7 +1687,7 @@ int parse_root() {
 		}
 		/* Function declaration */
 		if (read_sym ('(')) {
-			if (!parse_func (id)) {
+			if (!parse_func (type, id)) {
 				break;
 			}
 		}
