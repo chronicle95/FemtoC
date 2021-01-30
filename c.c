@@ -1121,23 +1121,25 @@ int parse_keyword_block() {
 
 int parse_block() {
 	if (!read_sym ('{')) {
-		if (!parse_keyword_block ()) {
+		if (parse_keyword_block ()) {
+			return 1;
+		}
+		if (!parse_statement ()) {
+			return 0;
+		}
+		if (!read_sym (';')) {
+			return 0;
+		}
+	} else {
+		while (!read_sym ('}')) {
+			if (parse_keyword_block ()) {
+				continue;
+			}
 			if (!parse_statement ()) {
 				return 0;
 			}
 			if (!read_sym (';')) {
 				return 0;
-			}
-		}
-	} else {
-		while (!read_sym ('}')) {
-			if (!parse_keyword_block ()) {
-				if (!parse_statement ()) {
-					return 0;
-				}
-				if (!read_sym (';')) {
-					return 0;
-				}
 			}
 		}
 	}
@@ -1436,12 +1438,12 @@ int parse_statement() {
 		}
 		return 1;
 	} else if (read_type (&dst_type)) {
-		/* Definition of a local variable */
 		if (!read_id (id)) {
 			write_err ("identifier expected");
 			return 0;
 		}
 		if (read_sym ('=')) {
+			/* Definition of a local variable */
 			if (!parse_expr (&type)) {
 				return 0;
 			}
@@ -1543,6 +1545,7 @@ int parse_statement() {
 	/* Label */
 	else if (read_sym (':')) {
 		gen_cmd_label_x ("__", id, "");
+
 	} else {
 		write_err ("bad statement");
 		return 0;
