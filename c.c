@@ -18,6 +18,7 @@
 #include <stdio.h>
 
 /* Procedure declarations */
+int parse_label();
 int parse_statement();
 int parse_loop_for();
 int parse_loop_while();
@@ -1135,6 +1136,9 @@ int parse_block() {
 			if (parse_keyword_block ()) {
 				continue;
 			}
+			if (parse_label ()) {
+				continue;
+			}
 			if (!parse_statement ()) {
 				return 0;
 			}
@@ -1364,6 +1368,20 @@ int parse_garr(char type, char *name) {
 	return 1;
 }
 
+int parse_label() {
+	char id[ID_SZ];
+	char *temp = src_p;
+	if (!read_id (id)) {
+		return 0;
+	}
+	if (!read_sym (':')) {
+		src_p = temp;
+		return 0;
+	}
+	gen_cmd_label_x ("__", id, "");
+	return 1;
+}
+
 int parse_statement() {
 	int idx = 0;
 	char id[ID_SZ];
@@ -1507,6 +1525,12 @@ int parse_statement() {
 		return 1;
 	}
 
+	/* Allow for empty statement */
+	else if (read_sym (';')) {
+		unread_sym ();
+		return 1;
+	}
+
 	/* Otherwise check for identifier */
 	else if (!read_id (id)) {
 		write_err ("identifier expected");
@@ -1542,11 +1566,7 @@ int parse_statement() {
 		gen_cmd_popi (dst_type);
 	}
 
-	/* Label */
-	else if (read_sym (':')) {
-		gen_cmd_label_x ("__", id, "");
-
-	} else {
+	else {
 		write_err ("bad statement");
 		return 0;
 	}
