@@ -109,6 +109,15 @@ int gen_label(char *dst) {
 	return 1;
 }
 
+int strtonum(char *s) {
+	int result = 0;
+	while (*s) {
+		result = result * 10 + (*s - '0');
+		s = s + 1;
+	}
+	return result;
+}
+
 int strcomp(char *a, char *b) {
 	if ((a == 0) && (b == 0)) {
 		return 1;
