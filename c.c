@@ -17,6 +17,25 @@
 
 #include <stdio.h>
 
+/* Limits */
+#define ID_SZ   32     /* maximum identifier length */
+#define SRC_SZ  32000  /* up to ~2000 lines of C source code */
+#define OUT_SZ  65000  /* up to ~5500 lines of assembly output */
+#define LOC_SZ  800    /* up to 20 local variables */
+#define GBL_SZ  6400   /* up to 160 global identifiers (f + v) */
+#define ARG_SZ  200    /* up to 5 arguments per function */
+#define CNST_SZ 6400   /* up to 160 defined constants */
+#define LINE_SZ 80     /* assumed line size for assembly */
+
+/* Supported types */
+#define TYPE_NONE  0
+#define TYPE_INT   1
+#define TYPE_CHR   2
+#define TYPE_PTR   96  /* mask */
+#define TYPE_PTR0  32
+#define TYPE_PTR1  64
+#define TYPE_ARR   128
+
 /* Procedure declarations */
 int parse_label();
 int parse_statement();
@@ -25,25 +44,6 @@ int parse_loop_while();
 int parse_conditional();
 int parse_expr(int *type);
 int type_sizeof(int type);
-
-/* Global variables: Limits */
-int ID_SZ  = 32;    /* maximum identifier length */
-int SRC_SZ = 32000; /* up to ~2000 lines of C source code */
-int OUT_SZ = 65000; /* up to ~5500 lines of assembly output */
-int LOC_SZ = 800;   /* up to 20 local variables */
-int GBL_SZ = 6400;  /* up to 160 global identifiers (f + v) */
-int ARG_SZ = 200;   /* up to 5 arguments per function */
-int CNST_SZ = 6400; /* up to 160 defined constants */
-int LINE_SZ = 80;   /* assumed line size for assembly */
-
-/* Global variables: Types */
-int TYPE_NONE   = 0;
-int TYPE_INT    = 1;
-int TYPE_CHR    = 2;
-int TYPE_PTR    = 96; /* mask */
-int TYPE_PTR0   = 32;
-int TYPE_PTR1   = 64;
-int TYPE_ARR    = 128;
 
 /* Global variables: Pointers */
 char *src_p = 0; /* source code read pointer */
