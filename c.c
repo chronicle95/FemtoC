@@ -24,6 +24,7 @@ int parse_loop_for();
 int parse_loop_while();
 int parse_conditional();
 int parse_expr(int *type);
+int type_sizeof(int type);
 
 /* Global variables: Limits */
 int ID_SZ  = 32;    /* maximum identifier length */
@@ -209,9 +210,9 @@ int store_var(char *ptr, int type, char *s) {
 	char *fp = ptr;
 	/* look for the end */
 	while (*fp) {
-		fp = fp + 1;                    /* skip space marker */
-		fp = fp + sizeof (int);         /* skip type */
-		while (*fp && (*fp != ' ')) {   /* skip name */
+		fp = fp + 1;                      /* skip space marker */
+		fp = fp + type_sizeof (TYPE_INT); /* skip type */
+		while (*fp && (*fp != ' ')) {     /* skip name */
 			fp = fp + 1;
 		}
 	}
@@ -220,7 +221,7 @@ int store_var(char *ptr, int type, char *s) {
 	fp = fp + 1;
 	/* put type in there */
 	*((int*) fp) = type;
-	fp = fp + sizeof (int);
+	fp = fp + type_sizeof (TYPE_INT);
 	/* append a word */
 	while (*s) {
 		*fp = *s;
@@ -253,7 +254,7 @@ int find_var(char *ptr, char *s, int *t, int *i) {
 		fp = fp + 1;
 		/* read type */
 		tt = *((int*) fp);
-		fp = fp + sizeof (int);
+		fp = fp + type_sizeof (TYPE_INT);
 		/* read and check id */
 		sp = s;
 		no_match = 0;
@@ -1441,7 +1442,7 @@ int parse_statement() {
 		_gen_cmd_pop_rax ();
 		/* jump to end of function */
 		char *id_p = id;
-		char *fn_p = loc_p + 1 + sizeof (int);
+		char *fn_p = loc_p + 1 + type_sizeof (TYPE_INT);
 		while (*fn_p && (*fn_p != ' ')) {
 			*id_p = *fn_p;
 			id_p = id_p + 1;
