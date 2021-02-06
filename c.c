@@ -19,8 +19,8 @@
 
 /* Limits */
 #define ID_SZ   32     /* maximum identifier length */
-#define SRC_SZ  32000  /* up to ~2000 lines of C source code */
-#define OUT_SZ  65000  /* up to ~5500 lines of assembly output */
+#define SRC_SZ  64000  /* up to ~4k lines of C source code */
+#define OUT_SZ  256000 /* up to ~20k lines of assembly output */
 #define LOC_SZ  800    /* up to 20 local variables */
 #define GBL_SZ  6400   /* up to 160 global identifiers (f + v) */
 #define ARG_SZ  200    /* up to 5 arguments per function */
@@ -540,7 +540,7 @@ int gen_cmd_popi(int type) {
 
 int gen_cmd_inv() {
 	_gen_cmd_pop_rax ();
-	write_strln ("  xor $ffffffffffffffff, %rax");
+	write_strln ("  notq %rax");
 	write_strln ("  push %rax");
 	return 1;
 }
@@ -1490,7 +1490,7 @@ int parse_statement() {
 			id_p = id_p + 1;
 			fn_p = fn_p + 1;
 		}
-		*id_p = 0;
+		*id_p = (char) 0;
 		gen_cmd_jump_x ("__", id, "_end");
 		return 1;
 	} else if (read_sym_s ("goto")) {
@@ -1830,7 +1830,7 @@ int main() {
 			break;
 		}
 	}
-	*src_p = 0;
+	*src_p = (char) 0;
 	src_p = source;
 
 	/* Here we go */
