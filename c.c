@@ -23,25 +23,25 @@ int parse_statement();
 int parse_loop_for();
 int parse_loop_while();
 int parse_conditional();
-int parse_expr(char *type);
+int parse_expr(int *type);
 
 /* Global variables: Limits */
 int ID_SZ  = 32;    /* maximum identifier length */
 int SRC_SZ = 32000; /* up to ~2000 lines of C source code */
 int OUT_SZ = 65000; /* up to ~5500 lines of assembly output */
-int LOC_SZ = 800;   /* up to 32 local variables */
-int GBL_SZ = 6400;  /* up to 256 global identifiers (f + v) */
-int ARG_SZ = 200;   /* up to 8 arguments per function */
-int LINE_SZ = 80;   /* assume line size for assembly */
+int LOC_SZ = 800;   /* up to 20 local variables */
+int GBL_SZ = 6400;  /* up to 160 global identifiers (f + v) */
+int ARG_SZ = 200;   /* up to 5 arguments per function */
+int LINE_SZ = 80;   /* assumed line size for assembly */
 
 /* Global variables: Types */
-char TYPE_NONE   = 0;
-char TYPE_INT    = 1;
-char TYPE_CHR    = 2;
-char TYPE_PTR    = 96; /* mask */
-char TYPE_PTR0   = 32;
-char TYPE_PTR1   = 64;
-char TYPE_ARR    = 128;
+int TYPE_NONE   = 0;
+int TYPE_INT    = 1;
+int TYPE_CHR    = 2;
+int TYPE_PTR    = 96; /* mask */
+int TYPE_PTR0   = 32;
+int TYPE_PTR1   = 64;
+int TYPE_ARR    = 128;
 
 /* Global variables: Pointers */
 char *src_p = 0; /* source code read pointer */
@@ -49,10 +49,10 @@ char *out_p = 0; /* assembly output write pointer */
 
 /* Global variables: Namespaces
  * Each namespace is a list of records, represented as a byte array.
- * Each record has the following format: [Type][Name]
- * where Type is a single byte flag and Name is variable length character
- * string with space character in the end. End of namespace is marked
- * with null character. */
+ * Each record has the following format: [Marker][Type][Name]
+ * where Marker is space character 0x20, Type is an 8 byte field and
+ * Name is variable length character string.
+ * End of namespace is marked with zero 0x00 instead of space. */
 char *loc_p = 0; /* function locals list */
 char *arg_p = 0; /* function arguments list */
 char *gbl_p = 0; /* global variable list */
@@ -205,24 +205,29 @@ int write_numln(int n) {
  * @param[in] s pointer to a null-terminated name under question
  * @returns 1
  */
-int store_var(char *ptr, char type, char *s) {
+int store_var(char *ptr, int type, char *s) {
 	char *fp = ptr;
 	/* look for the end */
 	while (*fp) {
-		fp = fp + 1;
+		fp = fp + 1;                    /* skip space marker */
+		fp = fp + sizeof (int);         /* skip type */
+		while (*fp && (*fp != ' ')) {   /* skip name */
+			fp = fp + 1;
+		}
 	}
-	/* put type in there */
-	*fp = type;
+	/* mark the variable */
+	*fp = ' ';
 	fp = fp + 1;
+	/* put type in there */
+	*((int*) fp) = type;
+	fp = fp + sizeof (int);
 	/* append a word */
 	while (*s) {
 		*fp = *s;
 		s = s + 1;
 		fp = fp + 1;
 	}
-	/* space and null-terminate */
-	*fp = ' ';
-	fp = fp + 1;
+	/* null-terminate */
 	*fp = (char) 0;
 	return 1;
 }
@@ -236,21 +241,23 @@ int store_var(char *ptr, char type, char *s) {
  * @param[out] i variable name index
  * @returns 1 on success, 0 if not found
  */
-int find_var(char *ptr, char *s, char *t, int *i) {
+int find_var(char *ptr, char *s, int *t, int *i) {
 	char *sp = NULL;
 	char *fp = ptr;
-	char tt = 0;
+	int tt = 0;
 	char no_match = 0;
 	*i = 0;
 
 	while (*fp) {
-		/* read type */
-		tt = *fp;
+		/* skip occupancy marker */
 		fp = fp + 1;
+		/* read type */
+		tt = *((int*) fp);
+		fp = fp + sizeof (int);
 		/* read and check id */
 		sp = s;
 		no_match = 0;
-		while (*fp != ' ') {
+		while (*fp && (*fp != ' ')) {
 			if (*fp == *sp) {
 				sp = sp + 1;
 			} else {
@@ -263,8 +270,11 @@ int find_var(char *ptr, char *s, char *t, int *i) {
 			*t = tt;
 			return 1;
 		}
-		/* skip space and roll over to next var */
-		fp = fp + 1;
+		/* end of list processing */
+		if (!*fp) {
+			break;
+		}
+		/* roll over to next var */
 		*i = *i + 1;
 	}
 
@@ -371,7 +381,7 @@ int read_str_const() {
 	return 1;
 }
 
-char type_reference(char type) {
+int type_reference(int type) {
 	if ((type & TYPE_PTR) == TYPE_PTR) {
 		write_err ("depth of reference exceeded");
 		return type;
@@ -379,7 +389,7 @@ char type_reference(char type) {
 	return type + TYPE_PTR0;
 }
 
-char type_dereference(char type) {
+int type_dereference(int type) {
 	if ((type & TYPE_PTR) == 0) {
 		write_err ("can't dereference a non-pointer");
 		return type;
@@ -387,7 +397,7 @@ char type_dereference(char type) {
 	return type - TYPE_PTR0;
 }
 
-int read_type(char *type) {
+int read_type(int *type) {
 	int ref_depth = 0;
 	read_space ();
 	if (read_sym ('*')) {
@@ -490,7 +500,7 @@ int gen_cmd_pushl(char *name) {
 	return 1;
 }
 
-int gen_cmd_pushi(char type) {
+int gen_cmd_pushi(int type) {
 	_gen_cmd_pop_rax ();
 	if (type == TYPE_CHR) {
 		write_strln ("  movzbq (%rax), %rax");
@@ -501,7 +511,7 @@ int gen_cmd_pushi(char type) {
 	return 1;
 }
 
-int gen_cmd_popi(char type) {
+int gen_cmd_popi(int type) {
 	_gen_cmd_pop_rax ();
 	write_strln ("  pop %rbx");
 	if (type == TYPE_CHR) {
@@ -573,7 +583,7 @@ int gen_cmd_nzjump(char *name) {
 	return 1;
 }
 
-int gen_cmd_push_static(char *name, char type) {
+int gen_cmd_push_static(char *name, int type) {
 	if (type == TYPE_CHR) {
 		write_str ("  movzbq ");
 	} else {
@@ -585,7 +595,7 @@ int gen_cmd_push_static(char *name, char type) {
 	return 1;
 }
 
-int gen_cmd_pop_static(char *name, char type) {
+int gen_cmd_pop_static(char *name, int type) {
 	_gen_cmd_pop_rax ();
 	write_str ("  movq %rax, ");
 	write_str (name);
@@ -734,12 +744,12 @@ int gen_start() {
 * Parse and process functions                                                 *
 ******************************************************************************/
 
-int parse_invoke(char *name, char *ret_type) {
+int parse_invoke(char *name, int *ret_type) {
 	int argcnt = 0;
 	int n = 0;
 	int len = 0;
 	char *argpos[ARG_SZ / (ID_SZ + 1) + 1];
-	char type = TYPE_INT;
+	int type = TYPE_INT;
 	*ret_type = TYPE_INT;
 
 	/* use argpos to locate where the output goes */
@@ -796,7 +806,7 @@ int parse_invoke(char *name, char *ret_type) {
 	return 1;
 }
 
-int type_sizeof(char type) {
+int type_sizeof(int type) {
 	if (type == TYPE_CHR) return 1;
 	if (type == TYPE_INT) return 8;
 	if (type & TYPE_PTR) return 8;
@@ -805,7 +815,7 @@ int type_sizeof(char type) {
 }
 
 int parse_sizeof() {
-	char type = TYPE_NONE;
+	int type = TYPE_NONE;
 	if (!read_sym ('(')) {
 		write_err ("sizeof ( expected");
 		return 0;
@@ -822,12 +832,12 @@ int parse_sizeof() {
 	return 1;
 }
 
-int parse_operand(char *type) {
+int parse_operand(int *type) {
 	char buf[ID_SZ];
 	char lbl[ID_SZ];
 	int idx = 0;
 	char *tmp = 0;
-	char cast_type = TYPE_NONE;
+	int cast_type = TYPE_NONE;
 
 	/* Type casting */
 	tmp = src_p;
@@ -973,8 +983,8 @@ int pointer_math(char left_type, char right_type) {
 	return 1;
 }
 
-int parse_expr(char *type) {
-	char tmp_type = TYPE_NONE;
+int parse_expr(int *type) {
+	int tmp_type = TYPE_NONE;
 
 	/* At least one operand is a basis for an expression */
 	if (!parse_operand (type)) {
@@ -1152,7 +1162,7 @@ int parse_block() {
 
 int parse_conditional() {
 	char lbl[ID_SZ];
-	char type = TYPE_INT;  /* don't care */
+	int type = TYPE_INT;  /* don't care */
 
 	gen_label (lbl);
 
@@ -1206,7 +1216,7 @@ int parse_loop_for() {
 	char lbl4[ID_SZ];
 	char *tmp_sta = 0;
 	char *tmp_end = 0;
-	char type = TYPE_INT; /* default */
+	int type = TYPE_INT; /* default */
 
 	gen_label (lbl1);
 	gen_label (lbl2);
@@ -1284,7 +1294,7 @@ int parse_loop_while() {
 	char lbl2[ID_SZ];
 	char *tmp_sta = 0;
 	char *tmp_end = 0;
-	char type = TYPE_INT; /* default */
+	int type = TYPE_INT; /* default */
 
 	gen_label (lbl1);
 	gen_label (lbl2);
@@ -1328,7 +1338,7 @@ int parse_loop_while() {
 	return 1;
 }
 
-int parse_gvar(char type, char *name) {
+int parse_gvar(int type, char *name) {
 	char num[ID_SZ];
 	read_space ();
 	if (!read_number (num)) {
@@ -1348,7 +1358,7 @@ int parse_gvar(char type, char *name) {
 	return 1;
 }
 
-int parse_garr(char type, char *name) {
+int parse_garr(int type, char *name) {
 	char num[ID_SZ];
 	if (!read_number (num)) {
 		return 0;
@@ -1387,8 +1397,8 @@ int parse_statement() {
 	char id[ID_SZ];
 	char num[ID_SZ];
 
-	char dst_type = TYPE_NONE;
-	char type = TYPE_NONE;
+	int dst_type = TYPE_NONE;
+	int type = TYPE_NONE;
 
 	/* Show line of statement as comment */
 	char *tmp = src_p;
@@ -1430,12 +1440,14 @@ int parse_statement() {
 		/* save it */
 		_gen_cmd_pop_rax ();
 		/* jump to end of function */
-		idx = 1;
-		while (*(loc_p + idx) != ' ') {
-			*(id + idx - 1) = *(loc_p + idx);
-			idx = idx + 1;
+		char *id_p = id;
+		char *fn_p = loc_p + 1 + sizeof (int);
+		while (*fn_p && (*fn_p != ' ')) {
+			*id_p = *fn_p;
+			id_p = id_p + 1;
+			fn_p = fn_p + 1;
 		}
-		*(id + idx - 1) = 0;
+		*id_p = 0;
 		gen_cmd_jump_x ("__", id, "_end");
 		return 1;
 	} else if (read_sym_s ("goto")) {
@@ -1576,7 +1588,7 @@ int parse_statement() {
 
 int parse_argslist() {
 	char id[ID_SZ];
-	char type = 0;
+	int type = 0;
 
 	while (!read_sym (')')) {
 		if (!read_type (&type)) {
@@ -1599,7 +1611,7 @@ int parse_argslist() {
 	return 1;
 }
 
-int parse_func(char type, char *name) {
+int parse_func(int type, char *name) {
 	char *save = out_p;
 
 	/* Put function name to locals and arguments lists
@@ -1682,7 +1694,7 @@ int parse_preprocessor(char *ppname) {
 
 int parse_root() {
 	char id[ID_SZ];
-	char type = 0;
+	int type = 0;
 
 	while (*src_p) {
 		/* Preprocessor mockup (allows the parser to ignore pp) */
@@ -1782,7 +1794,7 @@ int main() {
 	/* Here we go */
 	parse_root ();
 
-	if (find_var (gbl_p, "main", (char*) &temp, &temp)) {
+	if (find_var (gbl_p, "main", &temp, &temp)) {
 		/* only generate prologue when main function defined */
 		gen_start ();
 	}
