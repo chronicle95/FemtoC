@@ -45,20 +45,24 @@ int parse_conditional();
 int parse_expr(int *type);
 int type_sizeof(int type);
 
-/* Global variables: Pointers */
-char *src_p = 0; /* source code read pointer */
-char *out_p = 0; /* assembly output write pointer */
+/* Global variables: Code arrays */
+char source[SRC_SZ];
+char result[OUT_SZ];
 
-/* Global variables: Namespaces
+/* Global variables: Namespace arrays
  * Each namespace is a list of records, represented as a byte array.
  * Each record has the following format: [Marker][Type][Name]
  * where Marker is space character 0x20, Type is an 8 byte field and
  * Name is variable length character string.
  * End of namespace is marked with zero 0x00 instead of space. */
-char *loc_p = 0; /* function locals list */
-char *arg_p = 0; /* function arguments list */
-char *gbl_p = 0; /* global variable list */
-char *con_p = 0; /* constant list */
+char locals[LOC_SZ];     /* function locals list */
+char arguments[ARG_SZ];  /* function arguments list */
+char globals[GBL_SZ]     /* global variable list */;
+char constants[CNST_SZ]; /* constant list */
+
+/* Global variables: Pointers */
+char *src_p = 0; /* source code read pointer */
+char *out_p = 0; /* assembly output write pointer */
 
 /* Global variables: Loops work area */
 int lbl_cnt = 0;     /* Label counter. Used for temporary labels */
@@ -731,7 +735,7 @@ int gen_start() {
 	puts ("# GNU Assembler [as, x86_64]");
 	puts (" .data");
 	puts ("__mema:");
-	puts (" .space 4194304");
+	puts (" .space 65536");
 	puts ("__mema_end:");
 
 	/* Initialize data and stack pointers */
@@ -810,7 +814,7 @@ int parse_invoke(char *name, int *ret_type) {
 	}
 
 	/* Determine the return type */
-	if (!find_var (gbl_p, name, ret_type, &n)) {
+	if (!find_var (globals, name, ret_type, &n)) {
 		write_err ("undeclared function");
 		return 0;
 	}
@@ -875,15 +879,15 @@ int parse_operand(int *type) {
 		if (!read_id (buf)) {
 			return 0;
 		}
-		if (find_var (loc_p, buf, type, &idx)) {
+		if (find_var (locals, buf, type, &idx)) {
 			gen_cmd_pushsf ();
 			gen_cmd_pushni ((idx + 1) * type_sizeof (TYPE_INT));
 			gen_cmd_sub ();
-		} else if (find_var (arg_p, buf, type, &idx)) {
+		} else if (find_var (arguments, buf, type, &idx)) {
 			gen_cmd_pushsf ();
 			gen_cmd_pushni (idx * type_sizeof (TYPE_INT));
 			gen_cmd_add ();
-		} else if (find_var (gbl_p, buf, type, &idx)) {
+		} else if (find_var (globals, buf, type, &idx)) {
 			gen_cmd_pushl (buf);
 		} else {
 			write_err ("undeclared identifier");
@@ -948,20 +952,20 @@ int parse_operand(int *type) {
 			}
 			write_strln ("  push %rax");
 		} else {
-			if (find_var (con_p, buf, type, &idx)) {
+			if (find_var (constants, buf, type, &idx)) {
 				gen_cmd_pushni (*type);
 				*type = TYPE_INT;
-			} else if (find_var (loc_p, buf, type, &idx)) {
+			} else if (find_var (locals, buf, type, &idx)) {
 				gen_cmd_pushsf ();
 				gen_cmd_pushni ((idx + 1) * type_sizeof (TYPE_INT));
 				gen_cmd_sub ();
 				gen_cmd_pushi (*type);
-			} else if (find_var (arg_p, buf, type, &idx)) {
+			} else if (find_var (arguments, buf, type, &idx)) {
 				gen_cmd_pushsf ();
 				gen_cmd_pushni (idx * type_sizeof (TYPE_INT));
 				gen_cmd_add ();
 				gen_cmd_pushi (*type);
-			} else if (find_var (gbl_p, buf, type, &idx)) {
+			} else if (find_var (globals, buf, type, &idx)) {
 				gen_cmd_push_static (buf, *type);
 			} else {
 				return 0;
@@ -1369,7 +1373,7 @@ int parse_gvar(int type, char *name) {
 	if (read_number (num)) {
 		write_strln (num);
 	} else if (read_id (num)) {
-		if (!find_var (con_p, num, &numi, &tmp)) {
+		if (!find_var (constants, num, &numi, &tmp)) {
 			return 0;
 		}
 		write_numln (numi);
@@ -1381,7 +1385,7 @@ int parse_gvar(int type, char *name) {
 		return 0;
 	}
 
-	store_var (gbl_p, type, name);
+	store_var (globals, type, name);
 	return 1;
 }
 
@@ -1398,7 +1402,7 @@ int parse_garr(int type, char *name) {
 	if (read_number (num)) {
 		write_strln (num);
 	} else if (read_id (num)) {
-		if (!find_var (con_p, num, &numi, &tmp)) {
+		if (!find_var (constants, num, &numi, &tmp)) {
 			return 0;
 		}
 		write_numln (numi);
@@ -1413,7 +1417,7 @@ int parse_garr(int type, char *name) {
 		return 0;
 	}
 
-	store_var (gbl_p, type | TYPE_ARR, name);
+	store_var (globals, type | TYPE_ARR, name);
 	return 1;
 }
 
@@ -1480,7 +1484,7 @@ int parse_statement() {
 		_gen_cmd_pop_rax ();
 		/* jump to end of function */
 		char *id_p = id;
-		char *fn_p = loc_p + 1 + type_sizeof (TYPE_INT);
+		char *fn_p = locals + 1 + type_sizeof (TYPE_INT);
 		while (*fn_p && (*fn_p != ' ')) {
 			*id_p = *fn_p;
 			id_p = id_p + 1;
@@ -1516,9 +1520,9 @@ int parse_statement() {
 			if (!parse_expr (&type)) {
 				return 0;
 			}
-			if (find_var (loc_p, id, &dst_type, &idx)
-					|| find_var (gbl_p, id, &dst_type, &idx)
-					|| find_var (arg_p, id, &dst_type, &idx)) {
+			if (find_var (locals, id, &dst_type, &idx)
+					|| find_var (globals, id, &dst_type, &idx)
+					|| find_var (arguments, id, &dst_type, &idx)) {
 				write_err ("duplicate identifier");
 				return 0;
 			} else {
@@ -1528,8 +1532,8 @@ int parse_statement() {
 				gen_cmd_dup ();
 
 				/* Allocate and point */
-				store_var (loc_p, dst_type, id);
-				find_var (loc_p, id, &dst_type, &idx);
+				store_var (locals, dst_type, id);
+				find_var (locals, id, &dst_type, &idx);
 				gen_cmd_pushsf ();
 				gen_cmd_pushni ((idx + 1) * type_sizeof (TYPE_INT));
 				gen_cmd_sub ();
@@ -1564,7 +1568,7 @@ int parse_statement() {
 			}
 
 			/* Local arrays are considered pointers */
-			store_var (loc_p, type_reference (dst_type), id);
+			store_var (locals, type_reference (dst_type), id);
 
 			/* Allocate memory for the array */
 			_gen_cmd_pop_rax ();
@@ -1599,15 +1603,15 @@ int parse_statement() {
 		if (!parse_expr (&type)) {
 			return 0;
 		}
-		if (find_var (loc_p, id, &dst_type, &idx)) {
+		if (find_var (locals, id, &dst_type, &idx)) {
 			gen_cmd_pushsf ();
 			gen_cmd_pushni ((idx + 1) * type_sizeof (TYPE_INT));
 			gen_cmd_sub ();
-		} else if (find_var (arg_p, id, &dst_type, &idx)) {
+		} else if (find_var (arguments, id, &dst_type, &idx)) {
 			gen_cmd_pushsf ();
 			gen_cmd_pushni (idx * type_sizeof (TYPE_INT));
 			gen_cmd_add ();
-		} else if (find_var (gbl_p, id, &dst_type, &idx)) {
+		} else if (find_var (globals, id, &dst_type, &idx)) {
 			gen_cmd_pushl (id);
 		} else {
 			write_err ("undefined identifier");
@@ -1640,7 +1644,7 @@ int parse_argslist() {
 			return 0;
 		}
 
-		store_var (arg_p, type, id);
+		store_var (arguments, type, id);
 
 		if (read_sym (',')) {
 			continue;
@@ -1655,11 +1659,11 @@ int parse_func(int type, char *name) {
 
 	/* Put function name to locals and arguments lists
 	 * so that the first entry index starts with 1 */
-	store_var (loc_p, type, name);
-	store_var (arg_p, type, name);
+	store_var (locals, type, name);
+	store_var (arguments, type, name);
 
 	/* Put function name to globals list */
-	store_var (gbl_p, type, name);
+	store_var (globals, type, name);
 
 	/* Put label */
 	write_str (name);
@@ -1668,7 +1672,7 @@ int parse_func(int type, char *name) {
 	/* Save allocation pointer on stack */
 	write_strln ("  push %rdi");
 	/* ..and reserve dummy local variable with index 1 */
-	store_var (loc_p, TYPE_INT, "?");
+	store_var (locals, TYPE_INT, "?");
 
 	/* Arguments */
 	if (!parse_argslist ()) {
@@ -1680,7 +1684,7 @@ int parse_func(int type, char *name) {
 		/* Nothing to be done here */
 		out_p = save;
 		/* Erase arguments list */
-		clear_memory (arg_p, ARG_SZ);
+		clear_memory (arguments, ARG_SZ);
 		return 1;
 	}
 
@@ -1708,8 +1712,8 @@ int parse_func(int type, char *name) {
 	write_strln ("  ret");
 
 	/* Erase lists of args and locals */
-	clear_memory (arg_p, ARG_SZ);
-	clear_memory (loc_p, LOC_SZ);
+	clear_memory (arguments, ARG_SZ);
+	clear_memory (locals, LOC_SZ);
 
 	return 1;
 }
@@ -1729,7 +1733,7 @@ int parse_preprocessor() {
 			write_err ("define: number expected");
 			return 0;
 		}
-		store_var (con_p, strtonum (num), id);
+		store_var (constants, strtonum (num), id);
 	} else {
 		write_err ("unsupported preprocessor. use: include,define");
 		return 0;
@@ -1797,12 +1801,6 @@ int parse_root() {
 ******************************************************************************/
 
 int main() {
-	char source[SRC_SZ];
-	char result[OUT_SZ];
-	char locals[LOC_SZ];
-	char arguments[ARG_SZ];
-	char globals[GBL_SZ];
-	char constants[CNST_SZ];
 	char last_written_str[LINE_SZ];
 
 	int  temp = 0;
@@ -1816,10 +1814,6 @@ int main() {
 
 	src_p = source;
 	out_p = result;
-	loc_p = locals;
-	arg_p = arguments;
-	gbl_p = globals;
-	con_p = constants;
 	last_str = last_written_str;
 
 	while (1) {
@@ -1842,7 +1836,7 @@ int main() {
 	/* Here we go */
 	parse_root ();
 
-	if (find_var (gbl_p, "main", &temp, &temp)) {
+	if (find_var (globals, "main", &temp, &temp)) {
 		/* only generate prologue when main function defined */
 		gen_start ();
 	}
