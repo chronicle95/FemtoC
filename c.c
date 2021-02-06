@@ -116,12 +116,12 @@ int gen_label(char *dst) {
 }
 
 int strtonum(char *s) {
-	int result = 0;
+	int n = 0;
 	while (*s) {
-		result = result * 10 + (*s - '0');
+		n = n * 10 + (*s - '0');
 		s = s + 1;
 	}
-	return result;
+	return n;
 }
 
 int strcomp(char *a, char *b) {
