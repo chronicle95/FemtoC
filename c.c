@@ -33,6 +33,7 @@ int OUT_SZ = 65000; /* up to ~5500 lines of assembly output */
 int LOC_SZ = 800;   /* up to 20 local variables */
 int GBL_SZ = 6400;  /* up to 160 global identifiers (f + v) */
 int ARG_SZ = 200;   /* up to 5 arguments per function */
+int CNST_SZ = 6400; /* up to 160 defined constants */
 int LINE_SZ = 80;   /* assumed line size for assembly */
 
 /* Global variables: Types */
@@ -57,6 +58,7 @@ char *out_p = 0; /* assembly output write pointer */
 char *loc_p = 0; /* function locals list */
 char *arg_p = 0; /* function arguments list */
 char *gbl_p = 0; /* global variable list */
+char *con_p = 0; /* constant list */
 
 /* Global variables: Loops work area */
 int lbl_cnt = 0;     /* Label counter. Used for temporary labels */
@@ -946,7 +948,10 @@ int parse_operand(int *type) {
 			}
 			write_strln ("  push %rax");
 		} else {
-			if (find_var (loc_p, buf, type, &idx)) {
+			if (find_var (con_p, buf, type, &idx)) {
+				gen_cmd_pushni (*type);
+				*type = TYPE_INT;
+			} else if (find_var (loc_p, buf, type, &idx)) {
 				gen_cmd_pushsf ();
 				gen_cmd_pushni ((idx + 1) * type_sizeof (TYPE_INT));
 				gen_cmd_sub ();
@@ -1685,12 +1690,22 @@ int parse_func(int type, char *name) {
 	return 1;
 }
 
-int parse_preprocessor(char *ppname) {
-	char atype[ID_SZ];
-	if (strcomp (ppname, "include")) {
+int parse_preprocessor() {
+	char id[ID_SZ];
+	char num[ID_SZ];
+	if (read_sym_s ("include")) {
 		/* Not supported for now */
-	} else if (strcomp (ppname, "define")) {
-		/* Not supported for now */
+	} else if (read_sym_s("define")) {
+		/* Allows defining constant numbers */
+		if (!read_id (id)) {
+			write_err ("define: identifier expected");
+			return 0;
+		}
+		if (!read_number (num)) {
+			write_err ("define: number expected");
+			return 0;
+		}
+		store_var (con_p, strtonum (num), id);
 	} else {
 		write_err ("unsupported preprocessor. use: include,define");
 		return 0;
@@ -1709,11 +1724,7 @@ int parse_root() {
 	while (*src_p) {
 		/* Preprocessor mockup (allows the parser to ignore pp) */
 		if (read_sym ('#')) {
-			if (!read_id (id)) {
-				write_err ("preprocessor identifier expected");
-				return 0;
-			}
-			if (!parse_preprocessor(id)) {
+			if (!parse_preprocessor ()) {
 				break;
 			}
 			continue;
@@ -1767,6 +1778,7 @@ int main() {
 	char locals[LOC_SZ];
 	char arguments[ARG_SZ];
 	char globals[GBL_SZ];
+	char constants[CNST_SZ];
 	char last_written_str[LINE_SZ];
 
 	int  temp = 0;
@@ -1776,12 +1788,14 @@ int main() {
 	clear_memory (locals, LOC_SZ);
 	clear_memory (globals, GBL_SZ);
 	clear_memory (arguments, ARG_SZ);
+	clear_memory (constants, CNST_SZ);
 
 	src_p = source;
 	out_p = result;
 	loc_p = locals;
 	arg_p = arguments;
 	gbl_p = globals;
+	con_p = constants;
 	last_str = last_written_str;
 
 	while (1) {
