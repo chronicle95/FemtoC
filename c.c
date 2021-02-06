@@ -1355,40 +1355,64 @@ int parse_loop_while() {
 
 int parse_gvar(int type, char *name) {
 	char num[ID_SZ];
-	read_space ();
-	if (!read_number (num)) {
-		return 0;
-	}
-	if (!read_sym (';')) {
-		return 0;
-	}
+	int numi = 0;
+	int tmp = 0;
+
 	gen_cmd_label (name);
 	if (type == TYPE_CHR) {
 		write_str (" .byte ");
 	} else {
 		write_str (" .quad ");
 	}
-	write_strln (num);
+
+	read_space ();
+	if (read_number (num)) {
+		write_strln (num);
+	} else if (read_id (num)) {
+		if (!find_var (con_p, num, &numi, &tmp)) {
+			return 0;
+		}
+		write_numln (numi);
+	} else {
+		return 0;
+	}
+
+	if (!read_sym (';')) {
+		return 0;
+	}
+
 	store_var (gbl_p, type, name);
 	return 1;
 }
 
 int parse_garr(int type, char *name) {
 	char num[ID_SZ];
-	if (!read_number (num)) {
+	int tmp = 0;
+	int numi = 0;
+
+	gen_cmd_label (name);
+	write_str (" .space ");
+	write_num (type_sizeof (type));
+	write_str ("*");
+
+	if (read_number (num)) {
+		write_strln (num);
+	} else if (read_id (num)) {
+		if (!find_var (con_p, num, &numi, &tmp)) {
+			return 0;
+		}
+		write_numln (numi);
+	} else {
 		return 0;
 	}
+
 	if (!read_sym (']')) {
 		return 0;
 	}
 	if (!read_sym (';')) {
 		return 0;
 	}
-	gen_cmd_label (name);
-	write_str (" .space ");
-	write_num (type_sizeof (type));
-	write_str ("*");
-	write_strln (num);
+
 	store_var (gbl_p, type | TYPE_ARR, name);
 	return 1;
 }
