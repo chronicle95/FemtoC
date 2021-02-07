@@ -602,6 +602,8 @@ int gen_cmd_nzjump(char *name) {
 int gen_cmd_push_static(char *name, int type) {
 	if (type == TYPE_CHR) {
 		write_str ("  movzbq ");
+	} else if (type & TYPE_ARR) {
+		write_str ("  leaq ");
 	} else {
 		write_str ("  movq ");
 	}
