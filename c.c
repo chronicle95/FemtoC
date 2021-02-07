@@ -640,8 +640,9 @@ int gen_cmd_label(char *name) {
 
 int gen_cmd_not() {
 	_gen_cmd_pop_rax ();
-	write_strln ("  or %rax, %rax");
+	write_strln ("  test %rax, %rax");
 	write_strln ("  sete %al");
+	write_strln ("  andq $0xff, %rax");
 	write_strln ("  push %rax");
 	return 1;
 }
@@ -670,7 +671,8 @@ int gen_cmd_dup() {
 }
 
 int gen_cmd_drop() {
-	write_strln ("  pop %rax");
+	/* drop into RDX because RAX contains return value */
+	write_strln ("  pop %rdx");
 	return 1;
 }
 
