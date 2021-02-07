@@ -36,6 +36,10 @@
 #define TYPE_PTR1  64
 #define TYPE_ARR   128
 
+/* Sections */
+#define SECTION_TEXT 0
+#define SECTION_DATA 1
+
 /* Procedure declarations */
 int parse_label();
 int parse_statement();
@@ -72,6 +76,7 @@ char *lbl_end = 0;   /* Nearest loop end label */
 /* Global variables: Misc */
 int line_number = 0; /* Current source line number */
 char *last_str = 0;  /* Last output string */
+int section = 0;     /* Linkage section */
 
 /******************************************************************************
 * Utility functions                                                           *
@@ -731,6 +736,20 @@ int gen_cmd_mod() {
 	return 1;
 }
 
+int gen_section(int sect) {
+	if (sect != section) {
+		section = sect;
+		if (section == SECTION_TEXT) {
+			write_strln (" .text");
+		} else if (section == SECTION_DATA) {
+			write_strln (" .data");
+		} else {
+			return 0;
+		}
+	}
+	return 1;
+}
+
 int gen_start() {
 	/* Use `puts` here instead of all `gen_cmd_*` stuff */
 	puts ("# Generated with FemtoC");
@@ -1364,6 +1383,7 @@ int parse_gvar(int type, char *name) {
 	int numi = 0;
 	int tmp = 0;
 
+	gen_section (SECTION_DATA);
 	gen_cmd_label (name);
 	if (type == TYPE_CHR) {
 		write_str (" .byte ");
@@ -1396,6 +1416,7 @@ int parse_garr(int type, char *name) {
 	int tmp = 0;
 	int numi = 0;
 
+	gen_section (SECTION_DATA);
 	gen_cmd_label (name);
 	write_str (" .space ");
 	write_num (type_sizeof (type));
@@ -1668,6 +1689,7 @@ int parse_func(int type, char *name) {
 	store_var (globals, type, name);
 
 	/* Put label */
+	gen_section (SECTION_TEXT);
 	write_str (name);
 	write_strln (":");
 
