@@ -1845,7 +1845,7 @@ int main() {
 		*src_p = getchar ();
 
 		/* Stop at EOF or overflow: do not change line below */
-		if (((*src_p + 1) == 0) || (*src_p == 255)) {
+		if (((*src_p + 1) == 0) || (*src_p == 255) || !*src_p) {
 			break;
 		}
 		src_p = src_p + 1;
