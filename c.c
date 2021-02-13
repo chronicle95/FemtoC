@@ -101,7 +101,7 @@ int clear_memory(char *p, int size) {
 	return 0;
 }
 
-int gen_label(char *dst) {
+int new_label(char *dst) {
 	int n = lbl_cnt;
 	copy_memory (dst, "_L_", 3);
 	dst = dst + 3;
@@ -935,8 +935,8 @@ int parse_operand(int *type) {
 			return read_sym (')');
 		}
 	} else if (read_sym ('"')) {
-		gen_label (buf);
-		gen_label (lbl);
+		new_label (buf);
+		new_label (lbl);
 		gen_cmd_jump (buf);
 		gen_cmd_label (lbl);
 		write_str (" .byte");
@@ -1206,7 +1206,7 @@ int parse_conditional() {
 	char lbl[ID_SZ];
 	int type = TYPE_INT;  /* don't care */
 
-	gen_label (lbl);
+	new_label (lbl);
 
 	if (!read_sym ('(')) {
 		return 0;
@@ -1233,7 +1233,7 @@ int parse_conditional() {
 	if (read_sym_s ("else")) {
 		gen_cmd_label (lbl);
 
-		gen_label (lbl);
+		new_label (lbl);
 		gen_cmd_nzjump (lbl);
 
 		if (!read_sym (';')) {
@@ -1260,10 +1260,10 @@ int parse_loop_for() {
 	char *tmp_end = 0;
 	int type = TYPE_INT; /* default */
 
-	gen_label (lbl1);
-	gen_label (lbl2);
-	gen_label (lbl3);
-	gen_label (lbl4);
+	new_label (lbl1);
+	new_label (lbl2);
+	new_label (lbl3);
+	new_label (lbl4);
 
 	/* Remember parent loop labels if any */
 	tmp_sta = lbl_sta;
@@ -1338,8 +1338,8 @@ int parse_loop_while() {
 	char *tmp_end = 0;
 	int type = TYPE_INT; /* default */
 
-	gen_label (lbl1);
-	gen_label (lbl2);
+	new_label (lbl1);
+	new_label (lbl2);
 
 	/* Remember parent loop labels if any */
 	tmp_sta = lbl_sta;
