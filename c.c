@@ -129,7 +129,7 @@ int strtonum(char *s) {
 	return n;
 }
 
-int strcomp(char *a, char *b) {
+int compare_str(char *a, char *b) {
 	if ((a == 0) && (b == 0)) {
 		return 1;
 	}
@@ -481,7 +481,7 @@ int read_number(char *dst) {
 ******************************************************************************/
 
 int _gen_cmd_pop_rax() {
-	if (!strcomp (last_str, "  push %rax")) {
+	if (!compare_str (last_str, "  push %rax")) {
 		write_strln ("  pop %rax");
 	} else {
 		out_p = out_p - 12;
