@@ -217,7 +217,7 @@ int write_numln(int n) {
  * Appends a variable to a varlist
  * A varlist is a sequence of characters, which are themselves
  * a series of names, separated by a space character.
- * Each name is prefixed with a single byte - the type of a
+ * Each name is prefixed with a word - the type of a
  * variable.
  * End of list is marked with null-character.
  *
