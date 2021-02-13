@@ -809,7 +809,7 @@ int parse_invoke(char *name, int *ret_type) {
 
 	/* Now that we have all our arguments prepared,
 	 * reverse them so the addressing is right */
-	if (argcnt) {
+	if (argcnt > 1) {
 		if (argcnt == 2) {
 			gen_cmd_swap ();
 		} else {
