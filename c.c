@@ -1449,13 +1449,16 @@ int parse_garr(int type, char *name) {
 int parse_label() {
 	char id[ID_SZ];
 	char *temp = src_p;
+
 	if (!read_id (id)) {
 		return 0;
 	}
+
 	if (!read_sym (':')) {
 		src_p = temp;
 		return 0;
 	}
+
 	gen_cmd_label_x ("__", id, "");
 	return 1;
 }
@@ -1747,6 +1750,7 @@ int parse_func(int type, char *name) {
 int parse_preprocessor() {
 	char id[ID_SZ];
 	char num[ID_SZ];
+
 	if (read_sym_s ("include")) {
 		/* Not supported for now */
 	} else if (read_sym_s("define")) {
@@ -1764,10 +1768,12 @@ int parse_preprocessor() {
 		write_err ("unsupported preprocessor. use: include,define");
 		return 0;
 	}
+
 	/* Find new line */
 	while (*src_p && (*src_p != 10)) {
 		src_p = src_p + 1;
 	}
+
 	return 1;
 }
 
@@ -1828,7 +1834,6 @@ int parse_root() {
 
 int main() {
 	char last_written_str[LINE_SZ];
-
 	int  temp = 0;
 
 	clear_memory (source, SRC_SZ);
