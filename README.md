@@ -4,7 +4,7 @@ This is a toy compiler for a subset of C programming language. Made just for fun
 
 The goal of this project is to write a compiler which can be compiled by itself and still resemble all the basic features of the language, so that it can as well be compiled by any mainstream toolset, like gcc or clang.
 
-I want to provide only a short description of this implementation here. In general, rely on the Standard C for syntax and whatnot. This document contains information on the limitations of the compiler.
+I want to provide only a short description of this implementation here. In general, rely on the Standard C for syntax and whatnot. This document contains information on the specifics of the compiler.
 
 _Note: parts of this readme may become obsolete at some point and other parts may display some functionality which is not yet implemented but is very desirable._
 ## Program interface
@@ -55,7 +55,7 @@ int, char, sizeof, if, else, while, for, asm, return, goto, break, continue, NUL
 ```
 These *can* be placed as identifiers, but it would be kinda tricky to use whatever variable or function you name with them.
 ### Data types
-Four data types are supported: ``int``, ``int[]``, ``char`` and ``char[]``.
+Four data types are supported: `int`, `int[]`, `char` and `char[]`.
 
 **Integers** behave like unsigned 64 bit numbers. It is up to the developer to treat them as signed (by taking care of the highest bit) or unsigned, but integers work as unsigned when used alongside pointers.
 
@@ -91,12 +91,12 @@ Here, I became a little bit lazy describing how it works, but all in all, functi
 ### Expressions and operators
 | Kind of op | Supported |
 | -- | -- |
-| Binary arithmetic | ``+ - * / % `` |
-| Unary arithmetic | ``-`` |
-| Binary logical | ```&& || > < == != >= <=``` |
-| Unary logical | ``!`` |
-| Bitwise logical | ```& |``` |
-| Unary bitwise logical | ``~`` |
+| Binary arithmetic | `+`, `-`, `*`, `/`, `%` |
+| Unary arithmetic | `-` |
+| Binary logical | `&&`, <code>&#124;&#124;</code>, `>`, `<`, `==`, `!=`, `>=`, `<=` |
+| Unary logical | `!` |
+| Bitwise logical | `&`, <code>&#124;</code> |
+| Unary bitwise logical | `~` |
 ### Pointer arithmetic
 There is a special kind of calculation when dealing with pointers. When a variable to the left of a binary arithmetic operator has a non-zero pointer marking, value to the right (automatically converted to int) gets multiplied by the size of underlying pointed type. It is only triggered for ``+`` and ``-`` operators. Any other operation on a pointer treats it as normal integer variable and does not account for pointed type size!
 ### External linkage (stdlib and custom libraries)
@@ -124,6 +124,7 @@ So I think it is important to show how it looks like:
 | -24(%rbp) | Local(0) |
 | ... | ... |
 | -24-8*n(%rbp) | Local(n) |
+
 %rbp - base register.
 
 Frames start at top-most chunk's location and run top-to-bottom.
