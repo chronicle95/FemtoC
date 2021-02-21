@@ -78,6 +78,41 @@ int line_number = 0; /* Current source line number */
 char *last_str = 0;  /* Last output string */
 int section = 0;     /* Linkage section */
 
+#if 0
+/******************************************************************************
+* I/O implementation                                                          *
+******************************************************************************/
+char getchar() {
+	char c = 0;
+	asm {
+	movq $0, %rax        # syscall = read
+	movq $0, %rdi        # file = stdin
+	leaq -24(%rbp), %rsi # buffer = &c
+	movq $1, %rdx        # size = 1
+	syscall
+	}
+	return c;
+}
+
+int putchar(char c) {
+	asm {
+	movq $1, %rax        # syscall = write
+	movq $1, %rdi        # file = stdout
+	leaq 8(%rbp), %rsi   # buffer = &c
+	movq $1, %rdx        # size = 1
+	syscall
+	}
+}
+
+int puts(char *s) {
+	while (*s) {
+		putchar (*s);
+		s = s + 1;
+	}
+	putchar (10);
+}
+#endif
+
 /******************************************************************************
 * Utility functions                                                           *
 ******************************************************************************/
@@ -794,7 +829,9 @@ int gen_start() {
 int parse_invoke(char *name, int *ret_type) {
 	int argcnt = 0;
 	int n = 0;
-	int len = 0;
+	int arg_list_len = 0;
+	int arg_item_len = 0;
+	char *arg_list_ptr = NULL;
 	char *argpos[ARG_SZ / (ID_SZ + 1) + 1];
 	int type = TYPE_INT;
 	*ret_type = TYPE_INT;
@@ -821,16 +858,23 @@ int parse_invoke(char *name, int *ret_type) {
 		if (argcnt == 2) {
 			gen_cmd_swap ();
 		} else {
-			len = *(argpos + argcnt) - *(argpos);
-			copy_memory (*(argpos + argcnt), *(argpos), len);
+			/* Point to end of arguments code */
+			arg_list_ptr = *(argpos + argcnt);
+			arg_list_len = arg_list_ptr - *argpos;
+			/* Make a copy of arguments code right after itself */
+			copy_memory (arg_list_ptr, *argpos, arg_list_len);
 			n = 0;
 			while (n < argcnt) {
-				copy_memory ((len - (*(argpos + n + 1) - *(argpos))) + *(argpos),
-						*(argpos + n) + len,
-						*(argpos + n + 1) - *(argpos + n));
+				/* Populate original code with statements in reverse */
+				arg_item_len = *(argpos + n + 1) - *(argpos + n);
+				arg_list_ptr = arg_list_ptr - arg_item_len;
+				copy_memory (arg_list_ptr,
+						*(argpos + n) + arg_list_len,
+						arg_item_len);
 				n = n + 1;
 			}
-			clear_memory (*(argpos) + len, len);
+			/* Empty the memory after copy */
+			clear_memory (*argpos + arg_list_len, arg_list_len);
 		}
 	}
 
