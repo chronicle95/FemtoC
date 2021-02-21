@@ -49,6 +49,8 @@ The parser accepts a couple of hashed statements:
 - ``#define`` partially works; it can only accept single constant integers as a means of substitution.
 
 Any extra macro statements are not supported. Please use some other tool for advanced preprocessing.
+
+You can also insert comments like `/* ... */`. The parser will skip those. Single line comments are not supported to save lines of code.
 ### Keywords
 ```
 int, char, sizeof, if, else, while, for, asm, return, goto, break, continue, NULL
