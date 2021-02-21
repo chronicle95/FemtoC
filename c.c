@@ -207,6 +207,14 @@ int write_err(char *s) {
 	return 0;
 }
 
+int write_warn(char *s) {
+	write_str ("# [WARNING][L ");
+	write_num (line_number);
+	write_str ("]: ");
+	write_strln (s);
+	return 1;
+}
+
 int write_numln(int n) {
 	write_num (n);
 	write_chr (10);
@@ -1765,8 +1773,7 @@ int parse_preprocessor() {
 		}
 		store_var (constants, strtonum (num), id);
 	} else {
-		write_err ("unsupported preprocessor. use: include,define");
-		return 0;
+		write_warn ("unsupported preprocessor. use: include,define");
 	}
 
 	/* Find new line */

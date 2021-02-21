@@ -31,7 +31,7 @@ $ make
 ```
 Then, compile one of the provided examples. We pass the source code through a pipe. And then the output is fed through another pipe to assembler.
 ```
-$ cat examples/hello.fc | ./cc | as
+$ cat examples/hello.c | ./cc | as
 ```
 The object file by the name ``a.out`` was created. Let's link the object file into the final executable and run it.
 ```

@@ -1,5 +1,8 @@
 /* 99 bottles song for FemtoC */
 
+#include <stdio.h>
+
+#if 0
 int putc(char c) {
 	asm {
 	movq $1, %rax        # syscall = write
@@ -54,6 +57,7 @@ int printf(char *fmt) {
 		fmt = fmt + 1;
 	}
 }
+#endif
 
 int main() {
 	int k = 99;

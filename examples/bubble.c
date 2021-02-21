@@ -1,5 +1,8 @@
 /* Bubblesort example for FemtoC */
 
+#include <stdio.h>
+
+#if 0
 char getchar() {
 	char c = 0;
 	asm {
@@ -38,6 +41,7 @@ int gets(char *s) {
 	}
 	*s = (char) 0;
 }
+#endif
 
 int rtrim(char *s) {
 	while (*s) s = s + 1;

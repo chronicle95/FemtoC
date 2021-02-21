@@ -1,5 +1,8 @@
 /* Hello World example for FemtoC */
 
+#include <stdio.h>
+
+#if 0
 int putchar(char c) {
 	asm {
 	movq $1, %rax        # syscall = write
@@ -17,6 +20,7 @@ int puts(char *s) {
 	}
 	putchar (10);
 }
+#endif
 
 int main() {
 	puts ("Hello World!");
