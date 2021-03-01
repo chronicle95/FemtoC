@@ -401,9 +401,13 @@ int read_space() {
 	return 1;
 }
 
-int read_sym(char exp) {
+int peek_sym(char exp) {
 	read_space ();
-	if (*src_p == exp) {
+	return (*src_p == exp);
+}
+
+int read_sym(char exp) {
+	if (peek_sym (exp)) {
 		src_p = src_p + 1;
 		return 1;
 	}
@@ -1087,10 +1091,10 @@ int parse_expr(int *type) {
 
 	/* Any closing brackets, commas and semicolons
 	 * are considered the end of expression */
-	while (!read_sym (',')
-			&& !read_sym (';')
-			&& !read_sym (')')
-			&& !read_sym (']')) {
+	while (!peek_sym (',')
+			&& !peek_sym (';')
+			&& !peek_sym (')')
+			&& !peek_sym (']')) {
 
 		if (read_sym ('+')) {
 			parse_operand (&tmp_type);
@@ -1184,8 +1188,7 @@ int parse_expr(int *type) {
 			return 0;
 		}
 	}
-	/* Parent rules should take care of the terminator */
-	unread_sym ();
+
 	return 1;
 }
 
