@@ -1,8 +1,9 @@
 #!/bin/bash
 source ./common.sh
+TITLE="Smoke fail test"
 IFILE=$IDIR/smoke-fail
 OFILE=$ODIR/smoke-fail
-echo "${CG}Smoke fail test begin${RC}"
+echo "${CG}${TITLE} begin${RC}"
 echo "Compiling..."
 cat $IFILE.fc | ../cc > $OFILE.s
 if ! grep -q "type expected" $OFILE.s; then
@@ -11,4 +12,4 @@ if ! grep -q "type expected" $OFILE.s; then
 fi
 echo "Clean up"
 rm $OFILE.s
-echo "${CG}Smoke fail test end${RC}"
+echo "${CG}${TITLE} end${RC}"

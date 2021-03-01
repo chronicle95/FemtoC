@@ -23,4 +23,5 @@ test:	all
 	@cd tests; \
 	mkdir -p bin; \
 	./smoke.sh; \
-	./smoke-fail.sh
+	./smoke-fail.sh; \
+	./compare-compiled.sh

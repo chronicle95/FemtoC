@@ -1,11 +1,9 @@
 #!/bin/bash
 source ./common.sh
-TITLE="Smoke test"
-IFILE=$IDIR/smoke
-OFILE=$ODIR/smoke
-echo "${CG}${TITLE} begin${RC}"
-echo "Compiling..."
-cat $IFILE.fc | ../cc > $OFILE.s
+IFILE=$IDIR/sample
+OFILE=$ODIR/sample_fc
+echo "Compiling with FemtoC..."
+cat $IFILE.c | ../cc > $OFILE.s
 if ! grep -q "no errors encountered" $OFILE.s; then
 	echo "${CR}Compilation failed${RC}"
 	exit 1
@@ -21,5 +19,4 @@ if ! ld $OFILE.o -o $OFILE; then
 	exit 1
 fi
 echo "Clean up"
-rm $OFILE.o $OFILE.s $OFILE
-echo "${CG}${TITLE} end${RC}"
+rm $OFILE.o $OFILE.s
