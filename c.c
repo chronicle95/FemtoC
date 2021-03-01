@@ -1764,9 +1764,7 @@ int parse_func(int type, char *name) {
 	if (read_sym (';')) {
 		/* Nothing to be done here */
 		out_p = save;
-		/* Erase arguments list */
-		clear_memory (arguments, ARG_SZ);
-		return 1;
+		goto parse_func_skip;
 	}
 
 	/* Body always begins with opening curly brace */
@@ -1792,6 +1790,7 @@ int parse_func(int type, char *name) {
 	write_strln ("  pop %rdi");
 	write_strln ("  ret");
 
+parse_func_skip:
 	/* Erase lists of args and locals */
 	clear_memory (arguments, ARG_SZ);
 	clear_memory (locals, LOC_SZ);
