@@ -60,8 +60,7 @@ int printf(char *fmt) {
 #endif
 
 int main() {
-	int k = 99;
-	while (k > 0) {
+	for (int k = 99; k > 0;) {
 		printf ("%i bottles of beer on the wall,%c", k, 10);
 		printf ("%i bottles of beer.%c", k, 10);
 		printf ("Take one down, pass it around,%c", 10);
