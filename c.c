@@ -785,6 +785,12 @@ int gen_cmd_mod() {
 	return 1;
 }
 
+int gen_global(char *name) {
+	write_str (" .global ");
+	write_strln (name);
+	return 1;
+}
+
 int gen_section(int sect) {
 	if (sect != section) {
 		section = sect;
@@ -1441,6 +1447,7 @@ int parse_gvar(int type, char *name) {
 	int tmp = 0;
 
 	gen_section (SECTION_DATA);
+	gen_global (name);
 	gen_cmd_label (name);
 	if (type == TYPE_CHR) {
 		write_str (" .byte ");
@@ -1474,6 +1481,7 @@ int parse_garr(int type, char *name) {
 	int numi = 0;
 
 	gen_section (SECTION_DATA);
+	gen_global (name);
 	gen_cmd_label (name);
 	write_str (" .space ");
 	write_num (type_sizeof (type));
@@ -1750,8 +1758,8 @@ int parse_func(int type, char *name) {
 
 	/* Put label */
 	gen_section (SECTION_TEXT);
-	write_str (name);
-	write_strln (":");
+	gen_global (name);
+	gen_cmd_label (name);
 
 	/* Save allocation pointer on stack */
 	write_strln ("  push %rdi");
