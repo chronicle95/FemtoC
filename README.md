@@ -40,6 +40,8 @@ $ ./hello
 Hello, World!
 ```
 As you can see, this compiler is very basic in terms of its user interface. Yet again, providing convenient controls is not the goal of this pet project.
+### Demo
+![](workflow.gif)
 ## Language subset
 ### Preprocessing
 I know, this must not be done during compilation stage, but to cut down the costs of having to run a separate preprocessor program just to ignore a few statements, I decided to add some support.
