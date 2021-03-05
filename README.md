@@ -41,7 +41,7 @@ Hello, World!
 ```
 As you can see, this compiler is very basic in terms of its user interface. Yet again, providing convenient controls is not the goal of this pet project.
 ### Demo
-![](workflow.gif)
+![](examples/workflow.gif)
 ## Language subset
 ### Preprocessing
 I know, this must not be done during compilation stage, but to cut down the costs of having to run a separate preprocessor program just to ignore a few statements, I decided to add some support.
@@ -113,7 +113,7 @@ _Note: nothing is static, so you'll need to make sure that there are no name con
 Now, the stack frame organization is not standard. In order to call methods from objects or libraries compiled with conventional tools, you will have to use ``asm`` injection and convert the frame. Such functionality was not tested yet, but it should work in theory.
 
 ***It will be very useful for calling, say, standard implementations of ``malloc`` and ``free`` to dynamically acquire memory on demand. I shall add an example and update this manual.***
-## Stack
+## Stack model
 This compiler uses non-standard stack frame. By default, 65Kb chunk of static memory is allocated for stack.
 
 So I think it is important to show how it looks like:
