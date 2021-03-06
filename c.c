@@ -1329,8 +1329,8 @@ int parse_loop_for() {
 	/* Remember parent loop labels if any */
 	tmp_sta = lbl_sta;
 	tmp_end = lbl_end;
-	lbl_sta = lbl1;
-	lbl_end = lbl2;
+	lbl_sta = lbl2;
+	lbl_end = lbl4;
 
 	if (!read_sym ('(')) {
 		return 0;
