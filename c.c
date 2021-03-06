@@ -1246,6 +1246,11 @@ int parse_block() {
 		}
 	} else {
 		while (!read_sym ('}')) {
+			if (peek_sym (0)) {
+				write_err ("unmatched {");
+				return 0;
+			}
+
 			if (parse_keyword_block ()) {
 				continue;
 			}
