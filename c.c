@@ -1,6 +1,6 @@
 /******************************************************************************
 * This file is part of the FemtoC project (https://github.com/chronicle95).   *
-* Copyright (c) 2017-2020 Artem Bondarenko.                                   *
+* Copyright (c) 2017-2021 Artem Bondarenko.                                   *
 *                                                                             *
 * This program is free software: you can redistribute it and/or modify        *
 * it under the terms of the GNU General Public License as published by        *
