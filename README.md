@@ -1,21 +1,21 @@
 
 ## About
-This is a toy compiler for a subset of C programming language. Made just for fun. Not intended for production use.
+This is a toy compiler for a subset of the C programming language. Made just for fun. Not intended for any production use.
 
-The goal of this project is to write a compiler which can be compiled by itself and still resemble all the basic features of the language, so that it can as well be compiled by any mainstream toolset, like gcc or clang.
+The goal of this project is to write a compiler which fits in a single file and can compile itself while still resembling all the basic features of the language, so that it can as well be compiled by any mainstream toolset, like GCC or Clang.
 
-I want to provide only a short description of this implementation here. In general, rely on the Standard C for syntax and whatnot. This document contains information on the specifics of the compiler.
+I want to provide only a brief description of this implementation here. In general, rely on the Standard C for syntax and whatnot. This document contains information on the specifics of the compiler.
 
 _Note: parts of this readme may become obsolete at some point and other parts may display some functionality which is not yet implemented but is very desirable._
 ## Program interface
 ### Order of execution
-The compiler is implemented as a command line utility.
+The compiler is a small command line utility.
 
-Source code is fed via standard input. The resulting assembly listing is dumped to standard out. Both I/O are in plain ASCII text. No fancy unicode stuff.
+Source code is fed to it via the standard input. The resulting assembly listing is dumped to standard out. Both I/O are in plain ASCII text. No fancy unicode stuff.
 ### What kind of input
-Everything regarding the subset is described in the paragraphs below. Refer to the "Language subset" section.
+Everything regarding the C subset is described in the paragraphs below. Refer to the "Language subset" section.
 ### What kind of output
-It produces a listing for GNU Assembler (x86_64, v2.34 at the moment of writing this doc) with AT&T syntax.
+The compiler produces a listing for GNU Assembler (x86_64, v2.34 at the moment of writing this doc) in AT&T syntax.
 ### Usage
 The assembly listing can be directly fed to the assembler and from there the object can be linked to produce a binary ELF file. The program may just work on any UNIX-based system, because it does not rely on any standard library, but it was only tested on Linux.
 
@@ -44,15 +44,15 @@ As you can see, this compiler is very basic in terms of its user interface. Yet 
 ![](examples/workflow.gif)
 ## Language subset
 ### Preprocessing
-I know, this must not be done during compilation stage, but to cut down the costs of having to run a separate preprocessor program just to ignore a few statements, I decided to add some support.
+I know, this must not be done during compilation stage, but to cut down the costs of having to run a separate preprocessor program just to ignore a few statements during self-compilation, I decided to add some support.
 
-The parser accepts a couple of hashed statements:
+The parser reads a couple of hashed statements:
 - ``#include`` does not work, ignored; a dummy was put in place so that the program does not freak out when this statement is met in its own source;
 - ``#define`` partially works; it can only accept single constant integers as a means of substitution.
 
 Any extra macro statements are not supported. Please use some other tool for advanced preprocessing.
 
-You can also insert comments like `/* ... */`. The parser will skip those. Single line comments are not supported to save lines of code.
+You can also insert comments like `/* ... */`. The parser will skip those. Single line comments are not supported for simplicity's sake.
 ### Keywords
 ```
 int, char, sizeof, if, else, while, for, asm, return, goto, break, continue, NULL
